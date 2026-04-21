@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, AlertTriangle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import DataTable from '../components/DataTable';
-import { getPatients, createPatient, updatePatient, deletePatient, getDiseases, getUsers } from '../../api/services';
+import { getPatients, createPatient, updatePatient, deletePatient, getUsers } from '../../api/services';
 import { toast } from 'sonner';
 import { useActivity } from '../../context/ActivityContext';
 
@@ -11,7 +11,6 @@ export default function Patients() {
   const navigate = useNavigate();
   const { logActivity } = useActivity();
   const [patients, setPatients] = useState([]);
-  const [diseases, setDiseases] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -43,14 +42,12 @@ export default function Patients() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [patientsData, diseasesData, usersData] = await Promise.all([
+      const [patientsData, usersData] = await Promise.all([
         getPatients().catch(() => ({ data: [] })),
-        getDiseases().catch(() => ({ data: [] })),
         getUsers().catch(() => ({ data: [] })),
       ]);
-      
+
       setPatients(patientsData.data || []);
-      setDiseases(diseasesData.data || []);
       setUsers(usersData.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -65,7 +62,6 @@ export default function Patients() {
     try {
       const payload = {
         ...formData,
-        suffering: formData.suffering ? parseInt(formData.suffering) : undefined,
         register_by: formData.register_by ? parseInt(formData.register_by) : undefined,
       };
 
@@ -152,8 +148,6 @@ export default function Patients() {
     setEditingPatient(null);
   };
 
-  const diseasesMap = useMemo(() => new Map(diseases.map((d: any) => [d.id, d])), [diseases]);
-
   const filteredPatients = useMemo(() => {
     const lower = searchTerm.toLowerCase();
     return patients.filter((patient: any) =>
@@ -168,15 +162,8 @@ export default function Patients() {
     { header: 'Nombre', accessor: 'name' },
     { header: 'Apellido', accessor: 'lastname' },
     { header: 'Apodo', accessor: 'nick' },
-    {
-      header: 'Enfermedad',
-      accessor: 'suffering',
-      render: (value: any) => {
-        const disease = diseasesMap.get(value);
-        return disease ? disease.name : '-';
-      }
-    },
-  ], [diseasesMap]);
+    { header: 'Padecimiento', accessor: 'suffering', render: (value: any) => value || '-' },
+  ], []);
 
   return (
     <div className="app-page p-8">
@@ -288,31 +275,21 @@ export default function Patients() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Enfermedad
+                  Padecimiento
                 </label>
-                <div className="relative">
-                  <select
-                    value={formData.suffering}
-                    onChange={(e) => setFormData({ ...formData, suffering: e.target.value })}
-                    className="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="">Seleccionar...</option>
-                    {diseases.map((disease) => {
-                      const diseaseName = disease.name;
-                      return (
-                        <option key={disease.id} value={disease.id}>
-                          {diseaseName.length > 40 ? diseaseName.substring(0, 37) + '...' : diseaseName}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                    <svg className="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+                <input
+                  type="text"
+                  maxLength={255}
+                  value={formData.suffering}
+                  onChange={(e) => setFormData({ ...formData, suffering: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="ej. Diabetes, Hipertensión"
+                />
+                <div className="text-right mt-1">
+                  <span className={`text-xs ${formData.suffering.length >= 255 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {formData.suffering.length}/255
+                  </span>
                 </div>
-                <div className="mt-1 h-4" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -325,7 +302,7 @@ export default function Patients() {
                     className="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">Seleccionar...</option>
-                    {users.map((user) => {
+                    {users.map((user: any) => {
                       const fullName = `${user.name} ${user.lastname}`;
                       return (
                         <option key={user.id} value={user.id}>

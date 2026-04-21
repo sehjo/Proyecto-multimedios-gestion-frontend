@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { UserCircle, Stethoscope, Activity, Pill, TrendingUp, Calendar } from 'lucide-react';
+import { UserCircle, Users, TrendingUp, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import StatsCard from '../components/StatsCard';
-import { getPatients, getDiagnoses, getDiseases, getDrugs } from '../../api/services';
+import { getPatients, getUsers } from '../../api/services';
 import { useActivity } from '../../context/ActivityContext';
+
+type ActivityItem = { id: string; type: string; name: string; timestamp: number };
 
 const formatTimeAgo = (timestamp: number, now: number) => {
   const elapsedSeconds = Math.floor((now - timestamp) / 1000);
@@ -29,9 +31,7 @@ export default function Dashboard() {
   const { recentActivity, activityVersion } = useActivity();
   const [stats, setStats] = useState({
     patients: 0,
-    diagnoses: 0,
-    diseases: 0,
-    drugs: 0,
+    users: 0,
   });
   const [nowTick, setNowTick] = useState(Date.now());
 
@@ -49,22 +49,17 @@ export default function Dashboard() {
 
   const loadStats = async () => {
     try {
-      const [patientsData, diagnosesData, diseasesData, drugsData] = await Promise.all([
+      const [patientsData, usersData] = await Promise.all([
         getPatients().catch(() => ({ meta: { total: 0 } })),
-        getDiagnoses().catch(() => ({ meta: { total: 0 } })),
-        getDiseases().catch(() => ({ meta: { total: 0 } })),
-        getDrugs().catch(() => ({ meta: { total: 0 } })),
+        getUsers().catch(() => ({ meta: { total: 0 } })),
       ]);
 
       setStats({
         patients: patientsData.meta?.total || 0,
-        diagnoses: diagnosesData.meta?.total || 0,
-        diseases: diseasesData.meta?.total || 0,
-        drugs: drugsData.meta?.total || 0,
+        users: usersData.meta?.total || 0,
       });
     } catch (error) {
       console.error('Error loading stats:', error);
-      // Keep default values on error
     }
   };
 
@@ -76,7 +71,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <StatsCard
           title="Total Pacientes"
           value={stats.patients}
@@ -85,23 +80,9 @@ export default function Dashboard() {
           trendUp={true}
         />
         <StatsCard
-          title="Diagnósticos"
-          value={stats.diagnoses}
-          icon={Stethoscope}
-          trend="+8% este mes"
-          trendUp={true}
-        />
-        <StatsCard
-          title="Enfermedades"
-          value={stats.diseases}
-          icon={Activity}
-        />
-        <StatsCard
-          title="Medicamentos"
-          value={stats.drugs}
-          icon={Pill}
-          trend="+5 nuevos"
-          trendUp={true}
+          title="Total Usuarios"
+          value={stats.users}
+          icon={Users}
         />
       </div>
 
@@ -116,7 +97,7 @@ export default function Dashboard() {
             {recentActivity.length === 0 && (
               <p className="text-sm text-gray-500">Aún no hay acciones recientes.</p>
             )}
-            {recentActivity.map((activity) => (
+            {recentActivity.map((activity: ActivityItem) => (
               <div key={activity.id} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0">
                 <div className="w-2 h-2 rounded-full bg-blue-600 mt-2 shrink-0"></div>
                 <div className="flex-1 min-w-0">
@@ -144,25 +125,11 @@ export default function Dashboard() {
               <p className="text-sm font-medium text-gray-900">Nuevo Paciente</p>
             </button>
             <button
-              onClick={() => navigate('/diagnoses?action=new')}
+              onClick={() => navigate('/users')}
               className="p-4 border-2 border-dashed border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
             >
-              <Stethoscope className="w-6 h-6 text-blue-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Nuevo Diagnóstico</p>
-            </button>
-            <button
-              onClick={() => navigate('/diseases?action=new')}
-              className="p-4 border-2 border-dashed border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
-            >
-              <Activity className="w-6 h-6 text-blue-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Nueva Enfermedad</p>
-            </button>
-            <button
-              onClick={() => navigate('/drugs?action=new')}
-              className="p-4 border-2 border-dashed border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
-            >
-              <Pill className="w-6 h-6 text-blue-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Nuevo Medicamento</p>
+              <Users className="w-6 h-6 text-blue-600 mb-2" />
+              <p className="text-sm font-medium text-gray-900">Gestionar Usuarios</p>
             </button>
           </div>
         </div>

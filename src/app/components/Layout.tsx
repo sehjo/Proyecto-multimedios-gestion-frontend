@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
-import { 
-  LayoutDashboard, 
-  Users, 
-  UserCircle, 
-  Stethoscope,
-  Pill,
+import {
+  LayoutDashboard,
+  Users,
+  UserCircle,
   ClipboardList,
   Settings,
-  Activity,
   LogOut,
   Menu,
   X,
@@ -24,9 +21,6 @@ export default function Layout() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Pacientes', href: '/patients', icon: UserCircle },
-    { name: 'Diagnósticos', href: '/diagnoses', icon: Stethoscope },
-    { name: 'Enfermedades', href: '/diseases', icon: Activity },
-    { name: 'Medicamentos', href: '/drugs', icon: Pill },
     { name: 'Usuarios', href: '/users', icon: Users },
     { name: 'Configuración', href: '/settings', icon: Settings },
   ];

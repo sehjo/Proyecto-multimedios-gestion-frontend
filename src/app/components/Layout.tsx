@@ -7,6 +7,7 @@ import {
   ClipboardList,
   CalendarDays,
   CalendarClock,
+  CalendarX,
   Settings,
   LogOut,
   Menu,
@@ -26,6 +27,7 @@ export default function Layout() {
     { name: 'Usuarios',      href: '/users',    icon: Users           },
     { name: 'Agenda',            href: '/agenda',         icon: CalendarDays  },
     { name: 'Bloques Horarios',  href: '/horario-config', icon: CalendarClock },
+    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX     },
     { name: 'Configuración',     href: '/settings',       icon: Settings      },
   ];
 

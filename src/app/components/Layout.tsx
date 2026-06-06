@@ -5,6 +5,7 @@ import {
   Users,
   UserCircle,
   ClipboardList,
+  CalendarDays,
   Settings,
   LogOut,
   Menu,
@@ -19,10 +20,11 @@ export default function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Pacientes', href: '/patients', icon: UserCircle },
-    { name: 'Usuarios', href: '/users', icon: Users },
-    { name: 'Configuración', href: '/settings', icon: Settings },
+    { name: 'Dashboard',     href: '/',         icon: LayoutDashboard },
+    { name: 'Pacientes',     href: '/patients', icon: UserCircle      },
+    { name: 'Usuarios',      href: '/users',    icon: Users           },
+    { name: 'Agenda',        href: '/agenda',   icon: CalendarDays    },
+    { name: 'Configuración', href: '/settings', icon: Settings        },
   ];
 
   const currentPageTitle = navigation.find((item) => item.href === location.pathname)?.name ?? 'Página no encontrada';

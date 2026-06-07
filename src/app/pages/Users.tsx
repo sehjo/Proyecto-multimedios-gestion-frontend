@@ -5,11 +5,13 @@ import DataTable from '../components/DataTable';
 import { getUsers, createUser, updateUser, deleteUser, getUserTypes } from '../../api/services';
 import { toast } from 'sonner';
 import { useActivity } from '../../context/ActivityContext';
+import { useSpecialties } from '../../context/SpecialtiesContext';
 
 export default function Users() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logActivity } = useActivity();
+  const { specialties } = useSpecialties();
   const [users, setUsers] = useState([]);
   const [userTypes, setUserTypes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,7 @@ export default function Users() {
     email: '',
     password: '',
     user_type_id: '',
+    specialty_id: '',
   });
 
   useEffect(() => {
@@ -65,6 +68,9 @@ export default function Users() {
         email: formData.email,
         user_type_id: parseInt(formData.user_type_id),
         ...(formData.password && { password: formData.password }),
+        ...(isDoctorSelected && formData.specialty_id && {
+          specialty_id: parseInt(formData.specialty_id),
+        }),
       };
 
       if (editingUser) {
@@ -100,6 +106,7 @@ export default function Users() {
       email: user.email,
       password: '',
       user_type_id: user.user_type_id,
+      specialty_id: user.specialty_id ? String(user.specialty_id) : '',
     });
     setShowModal(true);
   };
@@ -128,11 +135,18 @@ export default function Users() {
       email: '',
       password: '',
       user_type_id: '',
+      specialty_id: '',
     });
     setEditingUser(null);
   };
 
   const userTypesMap = useMemo(() => new Map(userTypes.map((t: any) => [t.id, t])), [userTypes]);
+
+  const isDoctorSelected = useMemo(() => {
+    if (!formData.user_type_id) return false;
+    const selectedType = userTypesMap.get(parseInt(formData.user_type_id)) ?? userTypesMap.get(formData.user_type_id);
+    return selectedType?.name?.toLowerCase() === 'doctor';
+  }, [formData.user_type_id, userTypesMap]);
 
   const filteredUsers = useMemo(() => {
     const lower = searchTerm.toLowerCase();
@@ -308,7 +322,15 @@ export default function Users() {
                   <select
                     required
                     value={formData.user_type_id}
-                    onChange={(e) => setFormData({ ...formData, user_type_id: e.target.value })}
+                    onChange={(e) => {
+                      const selectedType = userTypesMap.get(parseInt(e.target.value)) ?? userTypesMap.get(e.target.value);
+                      const isDoctor = selectedType?.name?.toLowerCase() === 'doctor';
+                      setFormData({
+                        ...formData,
+                        user_type_id: e.target.value,
+                        specialty_id: isDoctor ? formData.specialty_id : '',
+                      });
+                    }}
                     className="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
                     <option value="">Seleccionar...</option>
@@ -326,6 +348,36 @@ export default function Users() {
                 </div>
                 <div className="mt-1 h-4" />
               </div>
+
+              {isDoctorSelected && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Especialidad *
+                  </label>
+                  <div className="relative">
+                    <select
+                      required
+                      value={formData.specialty_id}
+                      onChange={(e) => setFormData({ ...formData, specialty_id: e.target.value })}
+                      className="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {specialties.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                      <svg className="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-1 h-4" />
+                </div>
+              )}
+
               <div className="app-modal-actions flex gap-2 pt-4">
                 <button
                   type="button"

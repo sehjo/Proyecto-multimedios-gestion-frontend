@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import {
   getUserTypes,
@@ -7,73 +7,121 @@ import {
   updateUserType,
   deleteUserType,
 } from '../../api/services';
+import { useSpecialties } from '../../context/SpecialtiesContext';
 import { toast } from 'sonner';
 
+type Tab = 'user-types' | 'specialties';
+
 export default function Settings() {
+  const [activeTab, setActiveTab] = useState<Tab>('user-types');
+
+  // ── User Types ────────────────────────────────────────────────────────────
   const [userTypes, setUserTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [formName, setFormName] = useState('');
+  const [showUserTypeModal, setShowUserTypeModal] = useState(false);
+  const [editingUserType, setEditingUserType] = useState(null);
+  const [userTypeName, setUserTypeName] = useState('');
 
   useEffect(() => {
-    loadData();
+    loadUserTypes();
   }, []);
 
-  const loadData = async () => {
+  const loadUserTypes = async () => {
     try {
       setLoading(true);
-      const userTypesData = await getUserTypes().catch(() => ({ data: [] }));
-      setUserTypes(userTypesData.data || []);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Error al cargar los datos');
+      const res = await getUserTypes().catch(() => ({ data: [] }));
+      setUserTypes(res.data || []);
+    } catch {
+      toast.error('Error al cargar los tipos de usuario');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleUserTypeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingItem) {
-        await updateUserType(editingItem.id, { name: formName });
+      if (editingUserType) {
+        await updateUserType(editingUserType.id, { name: userTypeName });
         toast.success('Tipo de usuario actualizado exitosamente');
       } else {
-        await createUserType({ name: formName });
+        await createUserType({ name: userTypeName });
         toast.success('Tipo de usuario creado exitosamente');
       }
-
-      setShowModal(false);
-      setFormName('');
-      setEditingItem(null);
-      loadData();
-    } catch (error) {
-      console.error('Error saving:', error);
+      closeUserTypeModal();
+      loadUserTypes();
+    } catch {
       toast.error('Error al guardar');
     }
   };
 
-  const handleEdit = (item: any) => {
-    setEditingItem(item);
-    setFormName(item.name);
-    setShowModal(true);
+  const handleUserTypeEdit = (item: any) => {
+    setEditingUserType(item);
+    setUserTypeName(item.name);
+    setShowUserTypeModal(true);
   };
 
-  const handleDelete = async (item: any) => {
-    if (window.confirm('¿Está seguro de eliminar este elemento?')) {
-      try {
-        await deleteUserType(item.id);
-        toast.success('Tipo de usuario eliminado exitosamente');
-        loadData();
-      } catch (error) {
-        console.error('Error deleting:', error);
-        toast.error('Error al eliminar');
-      }
+  const handleUserTypeDelete = async (item: any) => {
+    if (!window.confirm('¿Está seguro de eliminar este tipo de usuario?')) return;
+    try {
+      await deleteUserType(item.id);
+      toast.success('Tipo de usuario eliminado exitosamente');
+      loadUserTypes();
+    } catch {
+      toast.error('Error al eliminar');
     }
   };
 
-  const columns = [
+  const closeUserTypeModal = () => {
+    setShowUserTypeModal(false);
+    setUserTypeName('');
+    setEditingUserType(null);
+  };
+
+  // ── Specialties ───────────────────────────────────────────────────────────
+  const { specialties, addSpecialty, updateSpecialty, deleteSpecialty } = useSpecialties();
+  const [showSpecialtyModal, setShowSpecialtyModal] = useState(false);
+  const [editingSpecialty, setEditingSpecialty] = useState<{ id: number; name: string } | null>(null);
+  const [specialtyName, setSpecialtyName] = useState('');
+
+  const handleSpecialtySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = specialtyName.trim();
+    if (!trimmed) return;
+    if (editingSpecialty) {
+      updateSpecialty(editingSpecialty.id, trimmed);
+      toast.success('Especialidad actualizada exitosamente');
+    } else {
+      addSpecialty(trimmed);
+      toast.success('Especialidad creada exitosamente');
+    }
+    closeSpecialtyModal();
+  };
+
+  const handleSpecialtyEdit = (item: any) => {
+    setEditingSpecialty(item);
+    setSpecialtyName(item.name);
+    setShowSpecialtyModal(true);
+  };
+
+  const handleSpecialtyDelete = (item: any) => {
+    if (!window.confirm('¿Está seguro de eliminar esta especialidad?')) return;
+    deleteSpecialty(item.id);
+    toast.success('Especialidad eliminada exitosamente');
+  };
+
+  const closeSpecialtyModal = () => {
+    setShowSpecialtyModal(false);
+    setSpecialtyName('');
+    setEditingSpecialty(null);
+  };
+
+  const specialtyColumns = [
+    { header: 'ID', accessor: 'id' },
+    { header: 'Nombre', accessor: 'name' },
+  ];
+
+  const userTypeColumns = [
     { header: 'ID', accessor: 'id' },
     { header: 'Nombre', accessor: 'name' },
   ];
@@ -82,43 +130,101 @@ export default function Settings() {
     <div className="app-page p-8">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold text-gray-900 mb-2">Configuración</h1>
-        <p className="text-gray-500">Gestión de tipos de usuario</p>
+        <p className="text-gray-500">
+          {activeTab === 'user-types' ? 'Gestión de tipos de usuario' : 'Gestión de especialidades médicas'}
+        </p>
       </div>
 
-      <div className="mb-6">
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-200 mb-6">
         <button
-          onClick={() => {
-            setFormName('');
-            setEditingItem(null);
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          onClick={() => setActiveTab('user-types')}
+          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+            activeTab === 'user-types'
+              ? 'bg-white border border-b-white border-gray-200 text-blue-600 -mb-px'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
         >
-          <Plus className="w-5 h-5" />
-          Nuevo Tipo de Usuario
+          Tipos de Usuario
+        </button>
+        <button
+          onClick={() => setActiveTab('specialties')}
+          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+            activeTab === 'specialties'
+              ? 'bg-white border border-b-white border-gray-200 text-blue-600 -mb-px'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Especialidades Médicas
         </button>
       </div>
 
-      {loading ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-gray-500">Cargando...</p>
-        </div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={userTypes}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+      {/* ── User Types Tab ── */}
+      {activeTab === 'user-types' && (
+        <>
+          <div className="mb-6">
+            <button
+              onClick={() => {
+                setUserTypeName('');
+                setEditingUserType(null);
+                setShowUserTypeModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Nuevo Tipo de Usuario
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+              <p className="text-gray-500">Cargando...</p>
+            </div>
+          ) : (
+            <DataTable
+              columns={userTypeColumns}
+              data={userTypes}
+              onEdit={handleUserTypeEdit}
+              onDelete={handleUserTypeDelete}
+            />
+          )}
+        </>
       )}
 
-      {showModal && (
+      {/* ── Specialties Tab ── */}
+      {activeTab === 'specialties' && (
+        <>
+          <div className="mb-6">
+            <button
+              onClick={() => {
+                setSpecialtyName('');
+                setEditingSpecialty(null);
+                setShowSpecialtyModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Nueva Especialidad
+            </button>
+          </div>
+
+          <DataTable
+            columns={specialtyColumns}
+            data={specialties}
+            onEdit={handleSpecialtyEdit}
+            onDelete={handleSpecialtyDelete}
+          />
+        </>
+      )}
+
+      {/* ── User Type Modal ── */}
+      {showUserTypeModal && (
         <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              {editingItem ? 'Editar Tipo de Usuario' : 'Nuevo Tipo de Usuario'}
+              {editingUserType ? 'Editar Tipo de Usuario' : 'Nuevo Tipo de Usuario'}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleUserTypeSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nombre *
@@ -127,25 +233,21 @@ export default function Settings() {
                   type="text"
                   required
                   maxLength={255}
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
+                  value={userTypeName}
+                  onChange={(e) => setUserTypeName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="ej. Doctor, Enfermera"
                 />
                 <div className="text-right mt-1">
-                  <span className={`text-xs ${formName.length >= 255 ? 'text-red-500' : 'text-gray-500'}`}>
-                    {formName.length}/255
+                  <span className={`text-xs ${userTypeName.length >= 255 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {userTypeName.length}/255
                   </span>
                 </div>
               </div>
               <div className="app-modal-actions flex gap-2 pt-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setFormName('');
-                    setEditingItem(null);
-                  }}
+                  onClick={closeUserTypeModal}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
@@ -154,7 +256,54 @@ export default function Settings() {
                   type="submit"
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {editingItem ? 'Actualizar' : 'Crear'}
+                  {editingUserType ? 'Actualizar' : 'Crear'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Specialty Modal ── */}
+      {showSpecialtyModal && (
+        <div className="fixed inset-0 bg-blue-950/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              {editingSpecialty ? 'Editar Especialidad' : 'Nueva Especialidad'}
+            </h2>
+            <form onSubmit={handleSpecialtySubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre *
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={255}
+                  value={specialtyName}
+                  onChange={(e) => setSpecialtyName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="ej. Cardiología, Pediatría"
+                />
+                <div className="text-right mt-1">
+                  <span className={`text-xs ${specialtyName.length >= 255 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {specialtyName.length}/255
+                  </span>
+                </div>
+              </div>
+              <div className="app-modal-actions flex gap-2 pt-4">
+                <button
+                  type="button"
+                  onClick={closeSpecialtyModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {editingSpecialty ? 'Actualizar' : 'Crear'}
                 </button>
               </div>
             </form>

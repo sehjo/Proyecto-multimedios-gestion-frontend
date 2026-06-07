@@ -8,6 +8,7 @@ import {
   CalendarDays,
   CalendarClock,
   CalendarX,
+  Stethoscope,
   Settings,
   LogOut,
   Menu,
@@ -27,7 +28,8 @@ export default function Layout() {
     { name: 'Usuarios',      href: '/users',    icon: Users           },
     { name: 'Agenda',            href: '/agenda',         icon: CalendarDays  },
     { name: 'Bloques Horarios',  href: '/horario-config', icon: CalendarClock },
-    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX     },
+    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX      },
+    { name: 'Resumen Diario',   href: '/resumen-diario', icon: Stethoscope    },
     { name: 'Configuración',     href: '/settings',       icon: Settings      },
   ];
 

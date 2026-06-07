@@ -6,6 +6,7 @@ import {
   UserCircle,
   ClipboardList,
   Settings,
+  Bell,
   LogOut,
   Menu,
   X,
@@ -23,6 +24,7 @@ export default function Layout() {
     { name: 'Pacientes', href: '/patients', icon: UserCircle },
     { name: 'Usuarios', href: '/users', icon: Users },
     { name: 'Configuración', href: '/settings', icon: Settings },
+    { name: 'Notificaciones', href: '/notifications', icon: Bell },
   ];
 
   const currentPageTitle = navigation.find((item) => item.href === location.pathname)?.name ?? 'Página no encontrada';

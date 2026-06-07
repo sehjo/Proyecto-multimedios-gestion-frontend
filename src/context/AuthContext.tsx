@@ -26,6 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Dev bypass: skip login when VITE_DEV_BYPASS_AUTH=true
+    if (import.meta.env.VITE_DEV_BYPASS_AUTH === 'true') {
+      setToken('dev-token');
+      setUser({ id: 0, name: 'Admin Dev', email: 'dev@local.test', user_type: 'Administrador' });
+      setIsLoading(false);
+      return;
+    }
+
     // Restore session from sessionStorage on mount
     const savedToken = sessionStorage.getItem('auth_token');
     const savedUser = sessionStorage.getItem('auth_user');

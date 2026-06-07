@@ -23,6 +23,7 @@ export const router = createBrowserRouter([
           { path: 'patients', lazy: () => import('./pages/Patients').then(m => ({ Component: m.default })) },
 { path: 'users', lazy: () => import('./pages/Users').then(m => ({ Component: m.default })) },
           { path: 'settings', lazy: () => import('./pages/Settings').then(m => ({ Component: m.default })) },
+          { path: 'reports/appointments', lazy: () => import('./pages/AppointmentsReport').then(m => ({ Component: m.default })) },
           { path: '*', lazy: () => import('./pages/NotFound').then(m => ({ Component: m.default })) },
         ],
       },

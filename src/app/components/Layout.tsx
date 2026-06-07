@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   X,
+  BarChart2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -23,6 +24,7 @@ export default function Layout() {
     { name: 'Pacientes', href: '/patients', icon: UserCircle },
     { name: 'Usuarios', href: '/users', icon: Users },
     { name: 'Configuración', href: '/settings', icon: Settings },
+    { name: 'Reporte de Citas', href: '/reports/appointments', icon: BarChart2 },
   ];
 
   const currentPageTitle = navigation.find((item) => item.href === location.pathname)?.name ?? 'Página no encontrada';

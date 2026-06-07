@@ -2,18 +2,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Copy } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import DataTable from '../components/DataTable';
-import { getUsers, createUser, updateUser, deleteUser, getUserTypes } from '../../api/services';
+import { getUsers, createUser, updateUser, deleteUser } from '../../api/services';
 import { toast } from 'sonner';
 import { useActivity } from '../../context/ActivityContext';
 import { useSpecialties } from '../../context/SpecialtiesContext';
+import { useUserTypes } from '../../context/UserTypesContext';
 
 export default function Users() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logActivity } = useActivity();
   const { specialties } = useSpecialties();
+  const { userTypes } = useUserTypes();
   const [users, setUsers] = useState([]);
-  const [userTypes, setUserTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -44,13 +45,8 @@ export default function Users() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [usersData, userTypesData] = await Promise.all([
-        getUsers().catch(() => ({ data: [] })),
-        getUserTypes().catch(() => ({ data: [] })),
-      ]);
-      
+      const usersData = await getUsers().catch(() => ({ data: [] }));
       setUsers(usersData.data || []);
-      setUserTypes(userTypesData.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Error al cargar los datos');

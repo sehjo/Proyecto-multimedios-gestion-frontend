@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Filter, X } from 'lucide-react';
+import { Plus, Filter, X, AlertTriangle, XCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import DataTable from '../components/DataTable';
@@ -46,6 +46,12 @@ type Appointment = {
   appointment_time: string;
   status: AppointmentStatus;
   notes: string;
+  cancellation_reason?: string;
+};
+
+type EnrichedAppointment = Appointment & {
+  patient_name: string;
+  doctor_name: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -86,6 +92,7 @@ export default function Appointments() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // ── State ────────────────────────────────────────────────────────────────────
   const [showModal, setShowModal] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS);
   const [formData, setFormData] = useState(INITIAL_FORM);
@@ -96,9 +103,14 @@ export default function Appointments() {
   const [filterDate, setFilterDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
+  // Cancel modal
+  const [appointmentToCancel, setAppointmentToCancel] = useState<EnrichedAppointment | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+
   const hasActiveFilters = filterDoctor !== '' || filterDate !== '' || filterStatus !== '';
 
-  // Support ?action=new from sidebar shortcut
+  // ── Effects ──────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('action') === 'new') {
@@ -108,7 +120,6 @@ export default function Appointments() {
     }
   }, [location.search, location.pathname, navigate]);
 
-  // Recalculate booked slots when doctor or date changes
   useEffect(() => {
     if (!formData.doctor_id || !formData.appointment_date) {
       setBookedSlots([]);
@@ -126,14 +137,14 @@ export default function Appointments() {
     );
   }, [formData.doctor_id, formData.appointment_date, appointments]);
 
-  // ── Derived data ────────────────────────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────────────────────────
 
   const availableSlots = useMemo(
     () => TIME_SLOTS.filter((slot) => !bookedSlots.includes(slot)),
     [bookedSlots]
   );
 
-  const enrichedAppointments = useMemo(
+  const enrichedAppointments = useMemo<EnrichedAppointment[]>(
     () =>
       appointments.map((appt) => {
         const patient = MOCK_PATIENTS.find((p) => p.id === appt.patient_id);
@@ -176,7 +187,30 @@ export default function Appointments() {
     []
   );
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  const customActions = useMemo(
+    () => [
+      {
+        icon: <XCircle className="w-4 h-4" />,
+        label: 'Cancelar cita',
+        onClick: (row: EnrichedAppointment) => {
+          if (row.status === 'attended') {
+            toast.error('La cita ya fue atendida y no puede modificarse.');
+            return;
+          }
+          if (row.status === 'cancelled') {
+            toast.info('Esta cita ya está cancelada.');
+            return;
+          }
+          setAppointmentToCancel(row);
+          setCancelReason('');
+        },
+        className: 'text-red-500 hover:bg-red-50',
+      },
+    ],
+    []
+  );
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleDoctorChange = (doctorId: string) => {
     const doctor = MOCK_DOCTORS.find((d) => String(d.id) === doctorId);
@@ -192,7 +226,7 @@ export default function Appointments() {
     setFormData((prev) => ({ ...prev, appointment_date: date, appointment_time: '' }));
   };
 
-  const handleSubmit = (e: { preventDefault(): void }) => {
+  const handleNewAppointmentSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (!formData.appointment_time) {
       toast.error('Por favor seleccione un horario disponible');
@@ -214,6 +248,24 @@ export default function Appointments() {
     resetForm();
   };
 
+  const handleCancelConfirm = () => {
+    if (!appointmentToCancel || !cancelReason.trim()) return;
+
+    setAppointments((prev) =>
+      prev.map((a) =>
+        a.id === appointmentToCancel.id
+          ? { ...a, status: 'cancelled', cancellation_reason: cancelReason.trim() }
+          : a
+      )
+    );
+
+    toast.success('Cita cancelada exitosamente');
+    toast.info(`Notificación enviada a ${appointmentToCancel.patient_name} informando la cancelación.`);
+
+    setAppointmentToCancel(null);
+    setCancelReason('');
+  };
+
   const resetForm = () => {
     setFormData(INITIAL_FORM);
     setBookedSlots([]);
@@ -227,10 +279,11 @@ export default function Appointments() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="app-page p-8">
+
       {/* Header */}
       <div className="app-page-header flex items-center justify-between mb-6 gap-4">
         <div>
@@ -254,7 +307,6 @@ export default function Appointments() {
             Filtros
           </div>
 
-          {/* Doctor filter */}
           <div className="flex-1 min-w-[160px]">
             <label className="block text-xs text-gray-500 mb-1">Doctor</label>
             <SelectWrapper>
@@ -274,7 +326,6 @@ export default function Appointments() {
             </SelectWrapper>
           </div>
 
-          {/* Date filter */}
           <div className="flex-1 min-w-[160px]">
             <label className="block text-xs text-gray-500 mb-1">Fecha</label>
             <input
@@ -285,7 +336,6 @@ export default function Appointments() {
             />
           </div>
 
-          {/* Status filter */}
           <div className="flex-1 min-w-[160px]">
             <label className="block text-xs text-gray-500 mb-1">Estado</label>
             <SelectWrapper>
@@ -303,7 +353,6 @@ export default function Appointments() {
             </SelectWrapper>
           </div>
 
-          {/* Clear filters */}
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
@@ -315,7 +364,6 @@ export default function Appointments() {
           )}
         </div>
 
-        {/* Active filter summary */}
         {hasActiveFilters && (
           <p className="mt-2 text-xs text-gray-400">
             {filteredAppointments.length} de {appointments.length} cita{appointments.length !== 1 ? 's' : ''}
@@ -324,14 +372,14 @@ export default function Appointments() {
       </div>
 
       {/* Table */}
-      <DataTable columns={columns} data={filteredAppointments} />
+      <DataTable columns={columns} data={filteredAppointments} customActions={customActions} />
 
-      {/* New Appointment Modal */}
+      {/* ── New Appointment Modal ─────────────────────────────────────────────── */}
       {showModal && (
         <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="app-modal-panel bg-white rounded-xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Nueva Cita</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleNewAppointmentSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Paciente *</label>
                 <SelectWrapper>
@@ -458,6 +506,82 @@ export default function Appointments() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cancel Confirmation Modal ─────────────────────────────────────────── */}
+      {appointmentToCancel && (
+        <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Cancelar Cita</h3>
+                <p className="text-sm text-gray-500">
+                  Esta acción liberará el horario en la agenda del doctor.
+                </p>
+              </div>
+            </div>
+
+            {/* Appointment summary */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-5 space-y-2.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Paciente</span>
+                <span className="font-medium text-gray-900">{appointmentToCancel.patient_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Doctor</span>
+                <span className="font-medium text-gray-900">{appointmentToCancel.doctor_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Especialidad</span>
+                <span className="font-medium text-gray-900">{appointmentToCancel.specialty}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Fecha y hora</span>
+                <span className="font-medium text-gray-900">
+                  {formatDate(appointmentToCancel.appointment_date)} — {appointmentToCancel.appointment_time}
+                </span>
+              </div>
+            </div>
+
+            {/* Reason */}
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Motivo de cancelación *
+              </label>
+              <textarea
+                rows={3}
+                maxLength={500}
+                placeholder="Indique el motivo de la cancelación..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                autoFocus
+              />
+              <p className="text-right text-xs text-gray-400 mt-1">{cancelReason.length}/500</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setAppointmentToCancel(null); setCancelReason(''); }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                disabled={!cancelReason.trim()}
+                onClick={handleCancelConfirm}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirmar cancelación
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Plus, Filter, X, AlertTriangle, XCircle } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Filter, X, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import DataTable from '../components/DataTable';
@@ -20,10 +20,11 @@ const TIME_SLOTS = Array.from({ length: 19 }, (_, i) => {
 });
 
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; classes: string }> = {
-  pending:   { label: 'Pendiente',  classes: 'bg-yellow-100 text-yellow-800' },
-  confirmed: { label: 'Confirmada', classes: 'bg-blue-100 text-blue-800'   },
-  cancelled: { label: 'Cancelada',  classes: 'bg-red-100 text-red-800'     },
-  attended:  { label: 'Atendida',   classes: 'bg-green-100 text-green-800' },
+  pending:     { label: 'Pendiente',    classes: 'bg-yellow-100 text-yellow-800'  },
+  confirmed:   { label: 'Confirmada',   classes: 'bg-blue-100 text-blue-800'     },
+  cancelled:   { label: 'Cancelada',    classes: 'bg-red-100 text-red-800'       },
+  attended:    { label: 'Atendida',     classes: 'bg-green-100 text-green-800'   },
+  rescheduled: { label: 'Reprogramada', classes: 'bg-purple-100 text-purple-800' },
 };
 
 const INITIAL_FORM = {
@@ -61,6 +62,24 @@ function formatDate(dateStr: string) {
   return `${day}/${month}/${year}`;
 }
 
+function bookedSlotsForDoctor(
+  appointments: Appointment[],
+  doctorId: number,
+  date: string,
+  excludeId?: number
+): string[] {
+  return appointments
+    .filter(
+      (a) =>
+        a.doctor_id === doctorId &&
+        a.appointment_date === date &&
+        a.status !== 'cancelled' &&
+        a.status !== 'rescheduled' &&
+        a.id !== excludeId
+    )
+    .map((a) => a.appointment_time.substring(0, 5));
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: AppointmentStatus }) {
@@ -86,15 +105,49 @@ function ChevronDown() {
   );
 }
 
+function TimeSlotGrid({
+  slots,
+  selected,
+  onSelect,
+}: {
+  slots: string[];
+  selected: string;
+  onSelect: (slot: string) => void;
+}) {
+  if (slots.length === 0) {
+    return <p className="text-sm text-orange-500">No hay horarios disponibles para esta fecha.</p>;
+  }
+  return (
+    <div className="grid grid-cols-4 gap-2">
+      {slots.map((slot) => (
+        <button
+          key={slot}
+          type="button"
+          onClick={() => onSelect(slot)}
+          className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+            selected === slot
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300'
+          }`}
+        >
+          {slot}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Appointments() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ── State ────────────────────────────────────────────────────────────────────
-  const [showModal, setShowModal] = useState(false);
+  // ── State ──────────────────────────────────────────────────────────────────
   const [appointments, setAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS);
+
+  // New appointment form
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 
@@ -107,9 +160,14 @@ export default function Appointments() {
   const [appointmentToCancel, setAppointmentToCancel] = useState<EnrichedAppointment | null>(null);
   const [cancelReason, setCancelReason] = useState('');
 
+  // Reschedule modal
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState<EnrichedAppointment | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('');
+
   const hasActiveFilters = filterDoctor !== '' || filterDate !== '' || filterStatus !== '';
 
-  // ── Effects ──────────────────────────────────────────────────────────────────
+  // ── Effects ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -120,29 +178,45 @@ export default function Appointments() {
     }
   }, [location.search, location.pathname, navigate]);
 
+  // Booked slots for the new appointment form
   useEffect(() => {
     if (!formData.doctor_id || !formData.appointment_date) {
       setBookedSlots([]);
       return;
     }
-    const doctorId = parseInt(formData.doctor_id);
-    const date = formData.appointment_date;
-    const booked = appointments
-      .filter((a) => a.doctor_id === doctorId && a.appointment_date === date && a.status !== 'cancelled')
-      .map((a) => a.appointment_time.substring(0, 5));
-
+    const booked = bookedSlotsForDoctor(
+      appointments,
+      parseInt(formData.doctor_id),
+      formData.appointment_date
+    );
     setBookedSlots(booked);
     setFormData((prev) =>
       booked.includes(prev.appointment_time) ? { ...prev, appointment_time: '' } : prev
     );
   }, [formData.doctor_id, formData.appointment_date, appointments]);
 
-  // ── Derived data ─────────────────────────────────────────────────────────────
+  // Clear reschedule time when date changes
+  useEffect(() => {
+    setRescheduleTime('');
+  }, [rescheduleDate]);
+
+  // ── Derived data ───────────────────────────────────────────────────────────
 
   const availableSlots = useMemo(
-    () => TIME_SLOTS.filter((slot) => !bookedSlots.includes(slot)),
+    () => TIME_SLOTS.filter((s) => !bookedSlots.includes(s)),
     [bookedSlots]
   );
+
+  const rescheduleAvailableSlots = useMemo(() => {
+    if (!appointmentToReschedule || !rescheduleDate) return [];
+    const booked = bookedSlotsForDoctor(
+      appointments,
+      appointmentToReschedule.doctor_id,
+      rescheduleDate,
+      appointmentToReschedule.id
+    );
+    return TIME_SLOTS.filter((s) => !booked.includes(s));
+  }, [appointmentToReschedule, rescheduleDate, appointments]);
 
   const enrichedAppointments = useMemo<EnrichedAppointment[]>(
     () =>
@@ -158,14 +232,16 @@ export default function Appointments() {
     [appointments]
   );
 
-  const filteredAppointments = useMemo(() => {
-    return enrichedAppointments.filter((appt) => {
-      if (filterDoctor && String(appt.doctor_id) !== filterDoctor) return false;
-      if (filterDate && appt.appointment_date !== filterDate) return false;
-      if (filterStatus && appt.status !== filterStatus) return false;
-      return true;
-    });
-  }, [enrichedAppointments, filterDoctor, filterDate, filterStatus]);
+  const filteredAppointments = useMemo(
+    () =>
+      enrichedAppointments.filter((a) => {
+        if (filterDoctor && String(a.doctor_id) !== filterDoctor) return false;
+        if (filterDate && a.appointment_date !== filterDate) return false;
+        if (filterStatus && a.status !== filterStatus) return false;
+        return true;
+      }),
+    [enrichedAppointments, filterDoctor, filterDate, filterStatus]
+  );
 
   const columns = useMemo(
     () => [
@@ -175,13 +251,13 @@ export default function Appointments() {
       {
         header: 'Fecha',
         accessor: 'appointment_date',
-        render: (value: string) => formatDate(value),
+        render: (v: string) => formatDate(v),
       },
       { header: 'Hora', accessor: 'appointment_time' },
       {
         header: 'Estado',
         accessor: 'status',
-        render: (value: AppointmentStatus) => <StatusBadge status={value} />,
+        render: (v: AppointmentStatus) => <StatusBadge status={v} />,
       },
     ],
     []
@@ -189,6 +265,28 @@ export default function Appointments() {
 
   const customActions = useMemo(
     () => [
+      {
+        icon: <RefreshCw className="w-4 h-4" />,
+        label: 'Reprogramar cita',
+        onClick: (row: EnrichedAppointment) => {
+          if (row.status === 'attended') {
+            toast.error('La cita ya fue atendida y no puede modificarse.');
+            return;
+          }
+          if (row.status === 'cancelled') {
+            toast.error('No se puede reprogramar una cita cancelada.');
+            return;
+          }
+          if (row.status === 'rescheduled') {
+            toast.info('Esta cita ya fue reprogramada.');
+            return;
+          }
+          setAppointmentToReschedule(row);
+          setRescheduleDate('');
+          setRescheduleTime('');
+        },
+        className: 'text-indigo-500 hover:bg-indigo-50',
+      },
       {
         icon: <XCircle className="w-4 h-4" />,
         label: 'Cancelar cita',
@@ -201,6 +299,10 @@ export default function Appointments() {
             toast.info('Esta cita ya está cancelada.');
             return;
           }
+          if (row.status === 'rescheduled') {
+            toast.info('Esta cita ya fue reprogramada.');
+            return;
+          }
           setAppointmentToCancel(row);
           setCancelReason('');
         },
@@ -210,7 +312,7 @@ export default function Appointments() {
     []
   );
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleDoctorChange = (doctorId: string) => {
     const doctor = MOCK_DOCTORS.find((d) => String(d.id) === doctorId);
@@ -222,17 +324,13 @@ export default function Appointments() {
     }));
   };
 
-  const handleDateChange = (date: string) => {
-    setFormData((prev) => ({ ...prev, appointment_date: date, appointment_time: '' }));
-  };
-
   const handleNewAppointmentSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (!formData.appointment_time) {
       toast.error('Por favor seleccione un horario disponible');
       return;
     }
-    const newAppointment: Appointment = {
+    const newAppt: Appointment = {
       id: appointments.length + 1,
       patient_id: parseInt(formData.patient_id),
       doctor_id: parseInt(formData.doctor_id),
@@ -242,7 +340,7 @@ export default function Appointments() {
       status: 'pending',
       notes: formData.notes,
     };
-    setAppointments((prev) => [...prev, newAppointment]);
+    setAppointments((prev) => [...prev, newAppt]);
     toast.success('Cita agendada exitosamente');
     setShowModal(false);
     resetForm();
@@ -250,7 +348,6 @@ export default function Appointments() {
 
   const handleCancelConfirm = () => {
     if (!appointmentToCancel || !cancelReason.trim()) return;
-
     setAppointments((prev) =>
       prev.map((a) =>
         a.id === appointmentToCancel.id
@@ -258,12 +355,42 @@ export default function Appointments() {
           : a
       )
     );
-
     toast.success('Cita cancelada exitosamente');
     toast.info(`Notificación enviada a ${appointmentToCancel.patient_name} informando la cancelación.`);
-
     setAppointmentToCancel(null);
     setCancelReason('');
+  };
+
+  const handleRescheduleConfirm = () => {
+    if (!appointmentToReschedule || !rescheduleDate || !rescheduleTime) return;
+
+    const newAppt: Appointment = {
+      id: appointments.length + 1,
+      patient_id: appointmentToReschedule.patient_id,
+      doctor_id: appointmentToReschedule.doctor_id,
+      specialty: appointmentToReschedule.specialty,
+      appointment_date: rescheduleDate,
+      appointment_time: rescheduleTime,
+      status: 'confirmed',
+      notes: appointmentToReschedule.notes,
+    };
+
+    setAppointments((prev) =>
+      prev
+        .map((a) =>
+          a.id === appointmentToReschedule.id ? { ...a, status: 'rescheduled' } : a
+        )
+        .concat(newAppt)
+    );
+
+    toast.success('Cita reprogramada exitosamente');
+    toast.info(
+      `Notificación enviada a ${appointmentToReschedule.patient_name} con la nueva fecha: ${formatDate(rescheduleDate)} a las ${rescheduleTime}.`
+    );
+
+    setAppointmentToReschedule(null);
+    setRescheduleDate('');
+    setRescheduleTime('');
   };
 
   const resetForm = () => {
@@ -279,7 +406,7 @@ export default function Appointments() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="app-page p-8">
@@ -317,9 +444,7 @@ export default function Appointments() {
               >
                 <option value="">Todos</option>
                 {MOCK_DOCTORS.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name} {d.lastname}
-                  </option>
+                  <option key={d.id} value={d.id}>{d.name} {d.lastname}</option>
                 ))}
               </select>
               <ChevronDown />
@@ -374,7 +499,7 @@ export default function Appointments() {
       {/* Table */}
       <DataTable columns={columns} data={filteredAppointments} customActions={customActions} />
 
-      {/* ── New Appointment Modal ─────────────────────────────────────────────── */}
+      {/* ── New Appointment Modal ───────────────────────────────────────────── */}
       {showModal && (
         <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="app-modal-panel bg-white rounded-xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -391,9 +516,7 @@ export default function Appointments() {
                   >
                     <option value="">Seleccionar paciente...</option>
                     {MOCK_PATIENTS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} {p.lastname}
-                      </option>
+                      <option key={p.id} value={p.id}>{p.name} {p.lastname}</option>
                     ))}
                   </select>
                   <ChevronDown />
@@ -411,9 +534,7 @@ export default function Appointments() {
                   >
                     <option value="">Seleccionar doctor...</option>
                     {MOCK_DOCTORS.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name} {d.lastname}
-                      </option>
+                      <option key={d.id} value={d.id}>{d.name} {d.lastname}</option>
                     ))}
                   </select>
                   <ChevronDown />
@@ -440,40 +561,23 @@ export default function Appointments() {
                   required
                   min={today}
                   value={formData.appointment_date}
-                  onChange={(e) => handleDateChange(e.target.value)}
+                  onChange={(e) => setFormData({ ...formData, appointment_date: e.target.value, appointment_time: '' })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hora disponible *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Hora disponible *</label>
                 {!formData.doctor_id || !formData.appointment_date ? (
                   <p className="text-sm text-gray-400 italic">
                     Seleccione un doctor y fecha para ver los horarios disponibles.
                   </p>
-                ) : availableSlots.length === 0 ? (
-                  <p className="text-sm text-orange-500">
-                    No hay horarios disponibles para esta fecha.
-                  </p>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
-                    {availableSlots.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setFormData((prev) => ({ ...prev, appointment_time: slot }))}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                          formData.appointment_time === slot
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300'
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
+                  <TimeSlotGrid
+                    slots={availableSlots}
+                    selected={formData.appointment_time}
+                    onSelect={(slot) => setFormData((prev) => ({ ...prev, appointment_time: slot }))}
+                  />
                 )}
               </div>
 
@@ -510,7 +614,106 @@ export default function Appointments() {
         </div>
       )}
 
-      {/* ── Cancel Confirmation Modal ─────────────────────────────────────────── */}
+      {/* ── Reschedule Modal ────────────────────────────────────────────────── */}
+      {appointmentToReschedule && (
+        <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="app-modal-panel bg-white rounded-xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <RefreshCw className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Reprogramar Cita</h3>
+                <p className="text-sm text-gray-500">
+                  La cita original quedará en el historial como reprogramada.
+                </p>
+              </div>
+            </div>
+
+            {/* Current appointment summary */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-5 space-y-2.5 text-sm">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Cita actual</p>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Paciente</span>
+                <span className="font-medium text-gray-900">{appointmentToReschedule.patient_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Doctor</span>
+                <span className="font-medium text-gray-900">{appointmentToReschedule.doctor_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Especialidad</span>
+                <span className="font-medium text-gray-900">{appointmentToReschedule.specialty}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Fecha y hora</span>
+                <span className="font-medium text-gray-900">
+                  {formatDate(appointmentToReschedule.appointment_date)} — {appointmentToReschedule.appointment_time}
+                </span>
+              </div>
+            </div>
+
+            {/* New date & time */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nueva fecha *
+                </label>
+                <input
+                  type="date"
+                  required
+                  min={today}
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nuevo horario disponible *
+                </label>
+                {!rescheduleDate ? (
+                  <p className="text-sm text-gray-400 italic">
+                    Seleccione una fecha para ver los horarios disponibles.
+                  </p>
+                ) : (
+                  <TimeSlotGrid
+                    slots={rescheduleAvailableSlots}
+                    selected={rescheduleTime}
+                    onSelect={setRescheduleTime}
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setAppointmentToReschedule(null);
+                  setRescheduleDate('');
+                  setRescheduleTime('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                disabled={!rescheduleDate || !rescheduleTime}
+                onClick={handleRescheduleConfirm}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirmar reprogramación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cancel Confirmation Modal ───────────────────────────────────────── */}
       {appointmentToCancel && (
         <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
@@ -526,7 +729,6 @@ export default function Appointments() {
               </div>
             </div>
 
-            {/* Appointment summary */}
             <div className="bg-gray-50 rounded-lg p-4 mb-5 space-y-2.5 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Paciente</span>
@@ -548,7 +750,6 @@ export default function Appointments() {
               </div>
             </div>
 
-            {/* Reason */}
             <div className="mb-5">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Motivo de cancelación *

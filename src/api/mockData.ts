@@ -39,7 +39,7 @@ export const MOCK_DRUGS = [
   { id: 8, name: 'Amoxicilina 500mg' },
 ];
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'attended';
+export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'attended' | 'rescheduled';
 
 export const MOCK_DOCTORS = [
   { id: 1, name: 'Ricardo', lastname: 'Solano', specialty: 'Cardiología' },

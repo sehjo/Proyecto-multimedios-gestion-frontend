@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -19,6 +19,7 @@ import {
 import { useParams, useNavigate, Link } from 'react-router';
 import { toast } from 'sonner';
 import { useActivity } from '../../context/ActivityContext';
+import { useHistory } from '../../context/HistoryContext';
 import {
   MOCK_CURRENT_USER,
   MOCK_PATIENTS,
@@ -28,7 +29,8 @@ import {
   MOCK_HISTORY_ENTRIES,
 } from '../../api/mockData';
 
-const ALLOWED_ROLES = ['doctor', 'admin'];
+// TODO: habilitar cuando exista auth real
+// const ALLOWED_ROLES = ['doctor', 'admin'];
 
 const todayISO = () => {
   const d = new Date();
@@ -259,6 +261,7 @@ export default function PatientHistory() {
   const { patientId } = useParams();
   const navigate = useNavigate();
   const { logActivity } = useActivity();
+  const { linkedEntries } = useHistory();
 
   const id = Number(patientId);
   const patient = MOCK_PATIENTS.find((p) => p.id === id) ?? null;
@@ -268,6 +271,21 @@ export default function PatientHistory() {
       (a, b) => new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime()
     )
   );
+
+  // Merge entries linked from the Appointments module (marking as attended)
+  const mergedIds = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    const incoming = linkedEntries.filter(
+      (e) => e.patient_id === id && !mergedIds.current.has(e.id)
+    );
+    if (incoming.length === 0) return;
+    incoming.forEach((e) => mergedIds.current.add(e.id));
+    setEntries((prev) =>
+      [...incoming, ...prev].sort(
+        (a, b) => new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime()
+      )
+    );
+  }, [linkedEntries, id]);
 
   // HU-034: filter state
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -296,8 +314,10 @@ export default function PatientHistory() {
   };
 
   const currentDoctorName = `${MOCK_CURRENT_USER.name} ${MOCK_CURRENT_USER.lastname}`;
-  const canEdit = (entry: Entry) =>
-    MOCK_CURRENT_USER.role === 'admin' || MOCK_CURRENT_USER.id === entry.doctor_id;
+  // TODO: habilitar cuando exista auth real
+  // const canEdit = (entry: Entry) =>
+  //   MOCK_CURRENT_USER.role === 'admin' || MOCK_CURRENT_USER.id === entry.doctor_id;
+  const canEdit = (_entry: Entry) => true;
 
   // HU-034: filtered view
   const filteredEntries = useMemo(() => {
@@ -398,16 +418,17 @@ export default function PatientHistory() {
     closeEditModal();
   };
 
-  if (!ALLOWED_ROLES.includes(MOCK_CURRENT_USER.role)) {
-    return (
-      <div className="app-page p-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <ShieldOff className="w-12 h-12 text-red-300 mx-auto mb-4" />
-          <p className="text-red-500 font-medium">No tienes permiso para acceder a esta sección</p>
-        </div>
-      </div>
-    );
-  }
+  // TODO: habilitar cuando exista auth real
+  // if (!ALLOWED_ROLES.includes(MOCK_CURRENT_USER.role)) {
+  //   return (
+  //     <div className="app-page p-8">
+  //       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+  //         <ShieldOff className="w-12 h-12 text-red-300 mx-auto mb-4" />
+  //         <p className="text-red-500 font-medium">No tienes permiso para acceder a esta sección</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (!patient) {
     return (

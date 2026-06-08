@@ -39,6 +39,147 @@ export const MOCK_DRUGS = [
   { id: 8, name: 'Amoxicilina 500mg' },
 ];
 
+export type AppointmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'attended' | 'rescheduled';
+
+export const MOCK_DOCTORS = [
+  { id: 1, name: 'Ricardo', lastname: 'Solano', specialty: 'Cardiología' },
+  { id: 2, name: 'Elena', lastname: 'Mora', specialty: 'Pediatría' },
+  { id: 3, name: 'Andrés', lastname: 'Castro', specialty: 'Medicina General' },
+];
+
+export const MOCK_APPOINTMENTS: {
+  id: number;
+  patient_id: number;
+  doctor_id: number;
+  specialty: string;
+  appointment_date: string;
+  appointment_time: string;
+  status: AppointmentStatus;
+  notes: string;
+  cancellation_reason?: string;
+  attended_at?: string;
+}[] = [
+  {
+    id: 1,
+    patient_id: 1,
+    doctor_id: 1,
+    specialty: 'Cardiología',
+    appointment_date: '2026-06-09',
+    appointment_time: '07:00',
+    status: 'confirmed',
+    notes: 'Control mensual de presión arterial',
+  },
+  {
+    id: 2,
+    patient_id: 2,
+    doctor_id: 1,
+    specialty: 'Cardiología',
+    appointment_date: '2026-06-09',
+    appointment_time: '07:30',
+    status: 'pending',
+    notes: '',
+  },
+  {
+    id: 3,
+    patient_id: 5,
+    doctor_id: 1,
+    specialty: 'Cardiología',
+    appointment_date: '2026-06-09',
+    appointment_time: '08:30',
+    status: 'pending',
+    notes: 'Paciente refiere palpitaciones frecuentes',
+  },
+  {
+    id: 4,
+    patient_id: 3,
+    doctor_id: 2,
+    specialty: 'Pediatría',
+    appointment_date: '2026-06-10',
+    appointment_time: '09:00',
+    status: 'confirmed',
+    notes: '',
+  },
+  {
+    id: 5,
+    patient_id: 4,
+    doctor_id: 2,
+    specialty: 'Pediatría',
+    appointment_date: '2026-06-10',
+    appointment_time: '09:30',
+    status: 'cancelled',
+    notes: 'Paciente canceló por enfermedad',
+  },
+  {
+    id: 6,
+    patient_id: 1,
+    doctor_id: 3,
+    specialty: 'Medicina General',
+    appointment_date: '2026-06-09',
+    appointment_time: '10:00',
+    status: 'attended',
+    notes: '',
+  },
+  {
+    id: 7,
+    patient_id: 2,
+    doctor_id: 3,
+    specialty: 'Medicina General',
+    appointment_date: '2026-06-09',
+    appointment_time: '10:30',
+    status: 'confirmed',
+    notes: 'Seguimiento post-operatorio',
+  },
+  {
+    id: 8,
+    patient_id: 5,
+    doctor_id: 2,
+    specialty: 'Pediatría',
+    appointment_date: '2026-06-12',
+    appointment_time: '08:00',
+    status: 'pending',
+    notes: '',
+  },
+  {
+    id: 9,
+    patient_id: 3,
+    doctor_id: 1,
+    specialty: 'Cardiología',
+    appointment_date: '2026-06-11',
+    appointment_time: '09:00',
+    status: 'confirmed',
+    notes: 'Electrocardiograma de control',
+  },
+  {
+    id: 10,
+    patient_id: 4,
+    doctor_id: 3,
+    specialty: 'Medicina General',
+    appointment_date: '2026-06-13',
+    appointment_time: '08:00',
+    status: 'pending',
+    notes: '',
+  },
+];
+
+export type HistoryEntry = {
+  id: number;
+  patient_id: number;
+  consultation_date: string;
+  doctor_id: number;
+  diagnosis: string;
+  disease_id: number | null;
+  treatment: string;
+  observations: string;
+  updated_at?: string;
+  medications?: Array<{
+    id: number;
+    drug_id: number | null;
+    drug_name: string;
+    dose: string;
+    frequency: string;
+  }>;
+};
+
 export const MOCK_HISTORY_ENTRIES: Array<{
   id: number;
   patient_id: number;

@@ -103,6 +103,15 @@ export const deletePatient = async (id) => {
   await api.delete(`/patients/${id}`);
 };
 
+// Appointments
+export const getAppointments = async (params = {}) => {
+  const response = await api.get('/appointments', { params });
+  return response.data;
+};
+
+export const createAppointment = async (payload) => {
+  const response = await api.post('/appointments', payload);
+};
 // Diagnoses
 export const getDiagnoses = async (page = 1) => {
   const response = await api.get('/diagnoses', { params: { page } });

@@ -12,9 +12,9 @@ export default function MedicalHistory() {
     const lower = searchTerm.toLowerCase();
     return MOCK_PATIENTS.filter(
       (p) =>
-        p.name.toLowerCase().includes(lower) ||
-        p.lastname.toLowerCase().includes(lower) ||
-        p.nick.toLowerCase().includes(lower) ||
+        (p.name ?? '').toLowerCase().includes(lower) ||
+        (p.lastname ?? '').toLowerCase().includes(lower) ||
+        (p.nick ?? '').toLowerCase().includes(lower) ||
         String(p.id).includes(lower)
     );
   }, [searchTerm]);

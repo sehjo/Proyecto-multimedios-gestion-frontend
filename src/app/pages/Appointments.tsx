@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Calendar } from 'lucide-react';
+import { Plus, Filter, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
+import DataTable from '../components/DataTable';
 import {
   MOCK_PATIENTS,
   MOCK_DOCTORS,
@@ -9,12 +10,21 @@ import {
   type AppointmentStatus,
 } from '../../api/mockData';
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const TIME_SLOTS = Array.from({ length: 19 }, (_, i) => {
   const totalMinutes = 420 + i * 30; // 07:00 to 16:00
   const h = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
   const m = (totalMinutes % 60).toString().padStart(2, '0');
   return `${h}:${m}`;
 });
+
+const STATUS_CONFIG: Record<AppointmentStatus, { label: string; classes: string }> = {
+  pending:   { label: 'Pendiente',  classes: 'bg-yellow-100 text-yellow-800' },
+  confirmed: { label: 'Confirmada', classes: 'bg-blue-100 text-blue-800'   },
+  cancelled: { label: 'Cancelada',  classes: 'bg-red-100 text-red-800'     },
+  attended:  { label: 'Atendida',   classes: 'bg-green-100 text-green-800' },
+};
 
 const INITIAL_FORM = {
   patient_id: '',
@@ -24,6 +34,8 @@ const INITIAL_FORM = {
   appointment_time: '',
   notes: '',
 };
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Appointment = {
   id: number;
@@ -36,14 +48,57 @@ type Appointment = {
   notes: string;
 };
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(dateStr: string) {
+  const [year, month, day] = dateStr.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: AppointmentStatus }) {
+  const cfg = STATUS_CONFIG[status] ?? { label: status, classes: 'bg-gray-100 text-gray-800' };
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.classes}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
+function SelectWrapper({ children }: { children: React.ReactNode }) {
+  return <div className="relative">{children}</div>;
+}
+
+function ChevronDown() {
+  return (
+    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+      <svg className="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+      </svg>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function Appointments() {
   const location = useLocation();
   const navigate = useNavigate();
+
   const [showModal, setShowModal] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>(MOCK_APPOINTMENTS);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 
+  // Filters
+  const [filterDoctor, setFilterDoctor] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  const hasActiveFilters = filterDoctor !== '' || filterDate !== '' || filterStatus !== '';
+
+  // Support ?action=new from sidebar shortcut
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('action') === 'new') {
@@ -53,6 +108,7 @@ export default function Appointments() {
     }
   }, [location.search, location.pathname, navigate]);
 
+  // Recalculate booked slots when doctor or date changes
   useEffect(() => {
     if (!formData.doctor_id || !formData.appointment_date) {
       setBookedSlots([]);
@@ -61,12 +117,7 @@ export default function Appointments() {
     const doctorId = parseInt(formData.doctor_id);
     const date = formData.appointment_date;
     const booked = appointments
-      .filter(
-        (a) =>
-          a.doctor_id === doctorId &&
-          a.appointment_date === date &&
-          a.status !== 'cancelled'
-      )
+      .filter((a) => a.doctor_id === doctorId && a.appointment_date === date && a.status !== 'cancelled')
       .map((a) => a.appointment_time.substring(0, 5));
 
     setBookedSlots(booked);
@@ -75,10 +126,57 @@ export default function Appointments() {
     );
   }, [formData.doctor_id, formData.appointment_date, appointments]);
 
+  // ── Derived data ────────────────────────────────────────────────────────────
+
   const availableSlots = useMemo(
     () => TIME_SLOTS.filter((slot) => !bookedSlots.includes(slot)),
     [bookedSlots]
   );
+
+  const enrichedAppointments = useMemo(
+    () =>
+      appointments.map((appt) => {
+        const patient = MOCK_PATIENTS.find((p) => p.id === appt.patient_id);
+        const doctor = MOCK_DOCTORS.find((d) => d.id === appt.doctor_id);
+        return {
+          ...appt,
+          patient_name: patient ? `${patient.name} ${patient.lastname}` : '-',
+          doctor_name: doctor ? `${doctor.name} ${doctor.lastname}` : '-',
+        };
+      }),
+    [appointments]
+  );
+
+  const filteredAppointments = useMemo(() => {
+    return enrichedAppointments.filter((appt) => {
+      if (filterDoctor && String(appt.doctor_id) !== filterDoctor) return false;
+      if (filterDate && appt.appointment_date !== filterDate) return false;
+      if (filterStatus && appt.status !== filterStatus) return false;
+      return true;
+    });
+  }, [enrichedAppointments, filterDoctor, filterDate, filterStatus]);
+
+  const columns = useMemo(
+    () => [
+      { header: 'Paciente',     accessor: 'patient_name' },
+      { header: 'Doctor',       accessor: 'doctor_name' },
+      { header: 'Especialidad', accessor: 'specialty' },
+      {
+        header: 'Fecha',
+        accessor: 'appointment_date',
+        render: (value: string) => formatDate(value),
+      },
+      { header: 'Hora', accessor: 'appointment_time' },
+      {
+        header: 'Estado',
+        accessor: 'status',
+        render: (value: AppointmentStatus) => <StatusBadge status={value} />,
+      },
+    ],
+    []
+  );
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleDoctorChange = (doctorId: string) => {
     const doctor = MOCK_DOCTORS.find((d) => String(d.id) === doctorId);
@@ -94,7 +192,7 @@ export default function Appointments() {
     setFormData((prev) => ({ ...prev, appointment_date: date, appointment_time: '' }));
   };
 
-  const handleSubmit = async (e: { preventDefault(): void }) => {
+  const handleSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
     if (!formData.appointment_time) {
       toast.error('Por favor seleccione un horario disponible');
@@ -121,20 +219,26 @@ export default function Appointments() {
     setBookedSlots([]);
   };
 
+  const clearFilters = () => {
+    setFilterDoctor('');
+    setFilterDate('');
+    setFilterStatus('');
+  };
+
   const today = new Date().toISOString().split('T')[0];
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="app-page p-8">
+      {/* Header */}
       <div className="app-page-header flex items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900 mb-2">Citas</h1>
-          <p className="text-gray-500">Agendamiento de citas médicas</p>
+          <p className="text-gray-500">Gestión de citas médicas</p>
         </div>
         <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
+          onClick={() => { resetForm(); setShowModal(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -142,31 +246,94 @@ export default function Appointments() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-        <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-500 text-sm">
-          Hay {appointments.length} cita{appointments.length !== 1 ? 's' : ''} registrada{appointments.length !== 1 ? 's' : ''}.
-        </p>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          className="mt-4 text-blue-600 text-sm font-medium hover:underline"
-        >
-          Agendar nueva cita
-        </button>
+      {/* Filter bar */}
+      <div className="mb-5 bg-white rounded-xl border border-gray-200 px-4 py-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex items-center gap-1.5 text-sm font-medium text-gray-600 mr-1">
+            <Filter className="w-4 h-4" />
+            Filtros
+          </div>
+
+          {/* Doctor filter */}
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-xs text-gray-500 mb-1">Doctor</label>
+            <SelectWrapper>
+              <select
+                value={filterDoctor}
+                onChange={(e) => setFilterDoctor(e.target.value)}
+                className="w-full appearance-none text-sm px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="">Todos</option>
+                {MOCK_DOCTORS.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} {d.lastname}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown />
+            </SelectWrapper>
+          </div>
+
+          {/* Date filter */}
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-xs text-gray-500 mb-1">Fecha</label>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Status filter */}
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-xs text-gray-500 mb-1">Estado</label>
+            <SelectWrapper>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full appearance-none text-sm px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="">Todos</option>
+                {(Object.keys(STATUS_CONFIG) as AppointmentStatus[]).map((s) => (
+                  <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
+                ))}
+              </select>
+              <ChevronDown />
+            </SelectWrapper>
+          </div>
+
+          {/* Clear filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Limpiar
+            </button>
+          )}
+        </div>
+
+        {/* Active filter summary */}
+        {hasActiveFilters && (
+          <p className="mt-2 text-xs text-gray-400">
+            {filteredAppointments.length} de {appointments.length} cita{appointments.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
+      {/* Table */}
+      <DataTable columns={columns} data={filteredAppointments} />
+
+      {/* New Appointment Modal */}
       {showModal && (
         <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="app-modal-panel bg-white rounded-xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Nueva Cita</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Paciente *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Paciente *</label>
                 <SelectWrapper>
                   <select
                     required
@@ -186,9 +353,7 @@ export default function Appointments() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Doctor *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Doctor *</label>
                 <SelectWrapper>
                   <select
                     required
@@ -208,9 +373,7 @@ export default function Appointments() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Especialidad *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Especialidad *</label>
                 <input
                   type="text"
                   required
@@ -223,9 +386,7 @@ export default function Appointments() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fecha *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
                 <input
                   type="date"
                   required
@@ -254,9 +415,7 @@ export default function Appointments() {
                       <button
                         key={slot}
                         type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({ ...prev, appointment_time: slot }))
-                        }
+                        onClick={() => setFormData((prev) => ({ ...prev, appointment_time: slot }))}
                         className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
                           formData.appointment_time === slot
                             ? 'bg-blue-600 text-white border-blue-600'
@@ -285,10 +444,7 @@ export default function Appointments() {
               <div className="app-modal-actions flex gap-2 pt-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
+                  onClick={() => { setShowModal(false); resetForm(); }}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
@@ -305,29 +461,6 @@ export default function Appointments() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function SelectWrapper({ children }: { children: React.ReactNode }) {
-  return <div className="relative">{children}</div>;
-}
-
-function ChevronDown() {
-  return (
-    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-      <svg
-        className="h-4 w-4 text-gray-500"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-      >
-        <path
-          fillRule="evenodd"
-          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-          clipRule="evenodd"
-        />
-      </svg>
     </div>
   );
 }

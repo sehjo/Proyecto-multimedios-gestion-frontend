@@ -111,6 +111,56 @@ export const getAppointments = async (params = {}) => {
 
 export const createAppointment = async (payload) => {
   const response = await api.post('/appointments', payload);
+};
+// Diagnoses
+export const getDiagnoses = async (page = 1) => {
+  const response = await api.get('/diagnoses', { params: { page } });
+  return response.data;
+};
+
+export const getDiagnosis = async (id) => {
+  const response = await api.get(`/diagnoses/${id}`);
+  return response.data;
+};
+
+export const createDiagnosis = async (payload) => {
+  const response = await api.post('/diagnoses', payload);
+  return response.data;
+};
+
+export const updateDiagnosis = async (id, payload) => {
+  const response = await api.put(`/diagnoses/${id}`, payload);
+  return response.data;
+};
+
+export const deleteDiagnosis = async (id) => {
+  await api.delete(`/diagnoses/${id}`);
+};
+
+// Diagnoses Has Treatments
+export const getDiagnosesHasTreatments = async (page = 1) => {
+  const response = await api.get('/diagnoses-has-treatments', { params: { page } });
+  return response.data;
+};
+
+export const createDiagnosisHasTreatment = async (payload) => {
+  const response = await api.post('/diagnoses-has-treatments', payload);
+  return response.data;
+};
+
+export const deleteDiagnosisHasTreatment = async (id) => {
+  await api.delete(`/diagnoses-has-treatments/${id}`);
+};
+
+// Diseases
+export const getDiseases = async (page = 1) => {
+  const response = await api.get('/diseases', { params: { page } });
+  return response.data;
+};
+
+// Drugs
+export const getDrugs = async (page = 1) => {
+  const response = await api.get('/drugs', { params: { page } });
   return response.data;
 };
 

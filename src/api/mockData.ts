@@ -161,7 +161,24 @@ export const MOCK_APPOINTMENTS: {
   },
 ];
 
-export const MOCK_CONSULTATIONS = [
+export const MOCK_HISTORY_ENTRIES: Array<{
+  id: number;
+  patient_id: number;
+  consultation_date: string;
+  doctor_id: number;
+  diagnosis: string;
+  disease_id: number | null;
+  treatment: string;
+  observations: string;
+  updated_at?: string;
+  medications?: Array<{
+    id: number;
+    drug_id: number | null;
+    drug_name: string;
+    dose: string;
+    frequency: string;
+  }>;
+}> = [
   // Carlos Méndez (patient_id: 1)
   {
     id: 1,
@@ -172,6 +189,10 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 6,
     treatment: 'Reposo relativo 48 horas, aplicación de calor local 20 minutos 3 veces al día. Fisioterapia 2 veces por semana por 4 semanas.',
     observations: 'Paciente refiere dolor intenso al flexionar el tronco. Limitación funcional moderada. Se indica control en 2 semanas.',
+    medications: [
+      { id: 1, drug_id: 6, drug_name: 'Ibuprofeno 600mg', dose: '600mg', frequency: 'Cada 8 horas por 5 días con alimentos' },
+      { id: 2, drug_id: 7, drug_name: 'Paracetamol 500mg', dose: '500mg', frequency: 'Cada 6 horas si persiste el dolor' },
+    ],
   },
   {
     id: 2,
@@ -182,6 +203,9 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 2,
     treatment: 'Dieta hipocalórica con restricción de azúcares simples. Ejercicio aeróbico 30 minutos diarios. Control de glucemia capilar en casa.',
     observations: 'HbA1c pendiente. Paciente con escasa adherencia al régimen alimentario. Se refuerza educación diabetológica.',
+    medications: [
+      { id: 1, drug_id: 2, drug_name: 'Metformina 850mg', dose: '850mg', frequency: '1 tableta con el almuerzo y 1 con la cena' },
+    ],
   },
   {
     id: 3,
@@ -192,6 +216,9 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 1,
     treatment: 'Restricción de sodio a menos de 2 g/día. Actividad física moderada 5 días a la semana. Evitar cafeína y tabaco.',
     observations: 'Primer diagnóstico de hipertensión. Paciente asintomático. Antecedentes familiares positivos. Se inicia manejo no farmacológico.',
+    medications: [
+      { id: 1, drug_id: 1, drug_name: 'Enalapril 10mg', dose: '10mg', frequency: '1 vez al día en la mañana' },
+    ],
   },
   // María González (patient_id: 2)
   {
@@ -203,6 +230,9 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 4,
     treatment: 'Dieta blanda fraccionada en 5 comidas pequeñas. Evitar picantes, café y alcohol. Técnicas de relajación.',
     observations: 'Ardor epigástrico frecuente relacionado con estrés. Endoscopia pendiente si síntomas persisten 30 días.',
+    medications: [
+      { id: 1, drug_id: 4, drug_name: 'Omeprazol 20mg', dose: '20mg', frequency: '1 vez al día en ayunas por 30 días' },
+    ],
   },
   {
     id: 5,
@@ -213,6 +243,9 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 3,
     treatment: 'Evitar desencadenantes alérgicos (polvo, humo, mascotas). Técnica inhalatoria correcta demostrada.',
     observations: 'FEV1 72% del valor predicho. Crisis nocturnas 2 veces por semana. Se ajusta terapia de mantenimiento.',
+    medications: [
+      { id: 1, drug_id: 3, drug_name: 'Salbutamol inhalador', dose: '2 inhalaciones', frequency: 'Cada 6 horas o según necesidad durante la crisis' },
+    ],
   },
   // Luis Herrera (patient_id: 3)
   {
@@ -224,6 +257,9 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 5,
     treatment: 'Lavados nasales con suero fisiológico 2 veces al día. Uso de cubrebocas en exteriores durante polinización.',
     observations: 'Prueba cutánea positiva para ácaros del polvo y gramíneas. Se recomienda higiene ambiental.',
+    medications: [
+      { id: 1, drug_id: 5, drug_name: 'Loratadina 10mg', dose: '10mg', frequency: '1 vez al día por la noche durante 30 días' },
+    ],
   },
   // Ana Vargas (patient_id: 4) — sin entradas para mostrar estado vacío
   // Jorge Ramírez (patient_id: 5)
@@ -236,6 +272,10 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 4,
     treatment: 'Dieta blanda, 5 comidas pequeñas al día. Evitar AINES y alcohol. Elevar cabecera de cama 30°.',
     observations: 'Síntomas relacionados con ingesta de antiinflamatorios por dolor articular. Se suspende AINE.',
+    medications: [
+      { id: 1, drug_id: 4, drug_name: 'Omeprazol 20mg', dose: '20mg', frequency: '1 vez al día en ayunas' },
+      { id: 2, drug_id: 8, drug_name: 'Amoxicilina 500mg', dose: '500mg', frequency: 'Cada 8 horas por 10 días' },
+    ],
   },
   {
     id: 8,
@@ -246,6 +286,9 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 6,
     treatment: 'Fisioterapia 3 veces por semana por 8 semanas. Ejercicios de fortalecimiento de core. Evitar cargas superiores a 5 kg.',
     observations: 'RM muestra hernia discal L4-L5 con compresión radicular leve. Sin déficit neurológico. Valorar cirugía si no mejora en 3 meses.',
+    medications: [
+      { id: 1, drug_id: 6, drug_name: 'Ibuprofeno 600mg', dose: '600mg', frequency: 'Cada 8 horas por 7 días con alimentos' },
+    ],
   },
   {
     id: 9,
@@ -256,6 +299,9 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 2,
     treatment: 'Dieta con índice glucémico bajo, eliminación de azúcares refinados. Caminata 30 minutos post-comida.',
     observations: 'Diagnóstico incidental. Antecedentes familiares de diabetes (madre y hermano). Inicio de educación diabetológica.',
+    medications: [
+      { id: 1, drug_id: 2, drug_name: 'Metformina 850mg', dose: '850mg', frequency: '1 tableta antes del almuerzo y antes de cenar' },
+    ],
   },
   {
     id: 10,
@@ -266,5 +312,8 @@ export const MOCK_CONSULTATIONS = [
     disease_id: 1,
     treatment: 'Dieta DASH (baja en sodio y grasa saturada). Reducción de peso corporal. Actividad aeróbica 150 minutos semanales.',
     observations: 'Hipertensión de reciente diagnóstico en paciente joven. Ecocardiograma y perfil renal solicitados. Control en 6 semanas.',
+    medications: [
+      { id: 1, drug_id: 1, drug_name: 'Enalapril 10mg', dose: '10mg', frequency: 'Cada 24 horas, monitorear presión semanalmente' },
+    ],
   },
 ];

@@ -9,16 +9,23 @@ import {
   FileText,
   Calendar,
   ShieldOff,
+  Plus,
+  X,
 } from 'lucide-react';
 import { useParams, useNavigate, Link } from 'react-router';
+import { toast } from 'sonner';
+import { useActivity } from '../../context/ActivityContext';
 import {
   MOCK_CURRENT_USER,
   MOCK_PATIENTS,
   MOCK_USERS,
+  MOCK_DISEASES,
   MOCK_HISTORY_ENTRIES,
 } from '../../api/mockData';
 
 const ALLOWED_ROLES = ['doctor', 'admin'];
+
+const todayISO = () => new Date().toISOString().split('T')[0];
 
 const formatDate = (dateStr: string) => {
   try {
@@ -32,20 +39,33 @@ const formatDate = (dateStr: string) => {
   }
 };
 
+type Entry = (typeof MOCK_HISTORY_ENTRIES)[number];
+
+type FormErrors = {
+  consultation_date?: string;
+  diagnosis?: string;
+};
+
+const emptyForm = () => ({
+  consultation_date: todayISO(),
+  disease_id: '',
+  diagnosis: '',
+  treatment: '',
+  observations: '',
+});
+
 export default function PatientHistory() {
   const { patientId } = useParams();
   const navigate = useNavigate();
+  const { logActivity } = useActivity();
 
   const id = Number(patientId);
   const patient = MOCK_PATIENTS.find((p) => p.id === id) ?? null;
 
-  const allEntries = useMemo(
-    () =>
-      MOCK_HISTORY_ENTRIES.filter((e) => e.patient_id === id).sort(
-        (a, b) =>
-          new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime()
-      ),
-    [id]
+  const [entries, setEntries] = useState<Entry[]>(() =>
+    MOCK_HISTORY_ENTRIES.filter((e) => e.patient_id === id).sort(
+      (a, b) => new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime()
+    )
   );
 
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -54,13 +74,19 @@ export default function PatientHistory() {
   const [doctorSearch, setDoctorSearch] = useState('');
   const [diagnosisSearch, setDiagnosisSearch] = useState('');
 
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState(emptyForm);
+  const [errors, setErrors] = useState<FormErrors>({});
+
   const getDoctorName = (doctorId: number) => {
     const u = MOCK_USERS.find((x) => x.id === doctorId);
     return u ? `${u.name} ${u.lastname}` : `Dr. #${doctorId}`;
   };
 
+  const currentDoctorName = `${MOCK_CURRENT_USER.name} ${MOCK_CURRENT_USER.lastname}`;
+
   const filteredEntries = useMemo(() => {
-    return allEntries.filter((entry) => {
+    return entries.filter((entry) => {
       const entryDate = new Date(entry.consultation_date);
 
       if (dateFrom) {
@@ -83,10 +109,7 @@ export default function PatientHistory() {
       }
       return true;
     });
-  }, [allEntries, dateFrom, dateTo, doctorSearch, diagnosisSearch]);
-
-  const hasActiveFilters =
-    dateFrom || dateTo || doctorSearch.trim() || diagnosisSearch.trim();
+  }, [entries, dateFrom, dateTo, doctorSearch, diagnosisSearch]);
 
   const toggleExpanded = (entryId: number) => {
     setExpandedIds((prev) => {
@@ -105,6 +128,67 @@ export default function PatientHistory() {
     } else {
       setExpandedIds(new Set(filteredEntries.map((e) => e.id)));
     }
+  };
+
+  const openModal = () => {
+    setFormData(emptyForm());
+    setErrors({});
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setErrors({});
+  };
+
+  const handleDiseaseSelect = (diseaseId: string) => {
+    const disease = MOCK_DISEASES.find((d) => String(d.id) === diseaseId);
+    setFormData((prev) => ({
+      ...prev,
+      disease_id: diseaseId,
+      diagnosis: disease ? disease.name : prev.diagnosis,
+    }));
+    if (disease) {
+      setErrors((prev) => ({ ...prev, diagnosis: undefined }));
+    }
+  };
+
+  const handleSubmit = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+
+    const newErrors: FormErrors = {};
+    if (!formData.consultation_date.trim()) {
+      newErrors.consultation_date = 'Este campo es obligatorio';
+    }
+    if (!formData.diagnosis.trim()) {
+      newErrors.diagnosis = 'Este campo es obligatorio';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    const newEntry: Entry = {
+      id: Math.max(0, ...entries.map((e) => e.id), ...MOCK_HISTORY_ENTRIES.map((e) => e.id)) + 1,
+      patient_id: id,
+      consultation_date: new Date(formData.consultation_date).toISOString(),
+      doctor_id: MOCK_CURRENT_USER.id,
+      diagnosis: formData.diagnosis.trim(),
+      disease_id: formData.disease_id ? Number(formData.disease_id) : null,
+      treatment: formData.treatment.trim(),
+      observations: formData.observations.trim(),
+    };
+
+    setEntries((prev) =>
+      [newEntry, ...prev].sort(
+        (a, b) => new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime()
+      )
+    );
+
+    toast.success('Registro guardado exitosamente');
+    logActivity({ type: 'Nuevo registro en historial', name: newEntry.diagnosis });
+    closeModal();
   };
 
   if (!ALLOWED_ROLES.includes(MOCK_CURRENT_USER.role)) {
@@ -151,18 +235,27 @@ export default function PatientHistory() {
 
       {/* Patient header */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-blue-700 font-bold text-xl">{initials}</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-blue-700 font-bold text-xl">{initials}</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {patient.name} {patient.lastname}
+              </h1>
+              <p className="text-gray-500 text-sm mt-0.5">
+                Apodo: <span className="font-medium text-gray-700">{patient.nick}</span>
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              {patient.name} {patient.lastname}
-            </h1>
-            <p className="text-gray-500 text-sm mt-0.5">
-              Apodo: <span className="font-medium text-gray-700">{patient.nick}</span>
-            </p>
-          </div>
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors self-start sm:self-auto"
+          >
+            <Plus className="w-5 h-5" />
+            Nuevo registro
+          </button>
         </div>
       </div>
 
@@ -240,12 +333,19 @@ export default function PatientHistory() {
       </div>
 
       {/* Timeline / Empty states */}
-      {allEntries.length === 0 ? (
+      {entries.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <Stethoscope className="w-14 h-14 text-gray-200 mx-auto mb-4" />
           <p className="text-gray-500 font-medium">
             Este paciente no tiene registros en su historial médico
           </p>
+          <button
+            onClick={openModal}
+            className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto"
+          >
+            <Plus className="w-4 h-4" />
+            Agregar primer registro
+          </button>
         </div>
       ) : filteredEntries.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
@@ -345,6 +445,174 @@ export default function PatientHistory() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Nuevo registro (HU-035) */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            {/* Modal header */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
+              <h2 className="text-xl font-semibold text-gray-900">Nuevo registro</h2>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} noValidate className="p-6 space-y-5">
+              {/* Fecha de consulta * */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fecha de consulta <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.consultation_date}
+                  onChange={(e) => {
+                    setFormData((prev) => ({ ...prev, consultation_date: e.target.value }));
+                    if (e.target.value) setErrors((prev) => ({ ...prev, consultation_date: undefined }));
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.consultation_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.consultation_date && (
+                  <p className="text-red-500 text-xs mt-1">{errors.consultation_date}</p>
+                )}
+              </div>
+
+              {/* Médico tratante (solo lectura) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Médico tratante <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={currentDoctorName}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
+              </div>
+
+              {/* Seleccionar del catálogo (opcional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Seleccionar enfermedad del catálogo
+                  <span className="text-gray-400 font-normal ml-1">(opcional)</span>
+                </label>
+                <select
+                  value={formData.disease_id}
+                  onChange={(e) => handleDiseaseSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none"
+                >
+                  <option value="">— Seleccionar del catálogo —</option>
+                  {MOCK_DISEASES.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">
+                  Al seleccionar, el nombre se carga automáticamente en el campo de diagnóstico.
+                </p>
+              </div>
+
+              {/* Diagnóstico * */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Diagnóstico <span className="text-red-500">*</span>
+                  <span className="text-gray-400 font-normal ml-1">(máx. 500 caracteres)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Describa el diagnóstico de la consulta..."
+                  value={formData.diagnosis}
+                  onChange={(e) => {
+                    setFormData((prev) => ({ ...prev, diagnosis: e.target.value }));
+                    if (e.target.value.trim()) setErrors((prev) => ({ ...prev, diagnosis: undefined }));
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+                    errors.diagnosis ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                <div className="flex justify-between mt-1">
+                  {errors.diagnosis ? (
+                    <p className="text-red-500 text-xs">{errors.diagnosis}</p>
+                  ) : (
+                    <span />
+                  )}
+                  <span className={`text-xs ${formData.diagnosis.length >= 500 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {formData.diagnosis.length}/500
+                  </span>
+                </div>
+              </div>
+
+              {/* Tratamiento indicado (opcional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tratamiento indicado
+                  <span className="text-gray-400 font-normal ml-1">(máx. 500 caracteres)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Describa el tratamiento indicado al paciente..."
+                  value={formData.treatment}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, treatment: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <div className="text-right mt-1">
+                  <span className={`text-xs ${formData.treatment.length >= 500 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {formData.treatment.length}/500
+                  </span>
+                </div>
+              </div>
+
+              {/* Observaciones (opcional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Observaciones
+                  <span className="text-gray-400 font-normal ml-1">(máx. 1000 caracteres)</span>
+                </label>
+                <textarea
+                  rows={4}
+                  maxLength={1000}
+                  placeholder="Observaciones adicionales de la consulta..."
+                  value={formData.observations}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, observations: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <div className="text-right mt-1">
+                  <span className={`text-xs ${formData.observations.length >= 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {formData.observations.length}/1000
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Guardar registro
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

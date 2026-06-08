@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Filter, X, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
+import { Plus, Filter, X, AlertTriangle, XCircle, RefreshCw, CheckCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import DataTable from '../components/DataTable';
@@ -48,6 +48,7 @@ type Appointment = {
   status: AppointmentStatus;
   notes: string;
   cancellation_reason?: string;
+  attended_at?: string;
 };
 
 type EnrichedAppointment = Appointment & {
@@ -60,6 +61,14 @@ type EnrichedAppointment = Appointment & {
 function formatDate(dateStr: string) {
   const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;
+}
+
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString('es-CR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
 }
 
 function bookedSlotsForDoctor(
@@ -88,6 +97,31 @@ function StatusBadge({ status }: { status: AppointmentStatus }) {
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.classes}`}>
       {cfg.label}
     </span>
+  );
+}
+
+function AppointmentSummary({ appt }: { appt: EnrichedAppointment }) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-4 space-y-2.5 text-sm">
+      <div className="flex justify-between">
+        <span className="text-gray-500">Paciente</span>
+        <span className="font-medium text-gray-900">{appt.patient_name}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-gray-500">Doctor</span>
+        <span className="font-medium text-gray-900">{appt.doctor_name}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-gray-500">Especialidad</span>
+        <span className="font-medium text-gray-900">{appt.specialty}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-gray-500">Fecha y hora</span>
+        <span className="font-medium text-gray-900">
+          {formatDate(appt.appointment_date)} — {appt.appointment_time}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -156,6 +190,9 @@ export default function Appointments() {
   const [filterDate, setFilterDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
+  // Attend modal
+  const [appointmentToAttend, setAppointmentToAttend] = useState<EnrichedAppointment | null>(null);
+
   // Cancel modal
   const [appointmentToCancel, setAppointmentToCancel] = useState<EnrichedAppointment | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -178,7 +215,6 @@ export default function Appointments() {
     }
   }, [location.search, location.pathname, navigate]);
 
-  // Booked slots for the new appointment form
   useEffect(() => {
     if (!formData.doctor_id || !formData.appointment_date) {
       setBookedSlots([]);
@@ -195,7 +231,6 @@ export default function Appointments() {
     );
   }, [formData.doctor_id, formData.appointment_date, appointments]);
 
-  // Clear reschedule time when date changes
   useEffect(() => {
     setRescheduleTime('');
   }, [rescheduleDate]);
@@ -265,6 +300,26 @@ export default function Appointments() {
 
   const customActions = useMemo(
     () => [
+      {
+        icon: <CheckCircle className="w-4 h-4" />,
+        label: 'Marcar como atendida',
+        onClick: (row: EnrichedAppointment) => {
+          if (row.status === 'attended') {
+            toast.info('Esta cita ya fue marcada como atendida.');
+            return;
+          }
+          if (row.status === 'cancelled') {
+            toast.error('No se puede atender una cita cancelada.');
+            return;
+          }
+          if (row.status === 'rescheduled') {
+            toast.error('Esta cita fue reprogramada. Atienda la nueva cita.');
+            return;
+          }
+          setAppointmentToAttend(row);
+        },
+        className: 'text-green-600 hover:bg-green-50',
+      },
       {
         icon: <RefreshCw className="w-4 h-4" />,
         label: 'Reprogramar cita',
@@ -337,7 +392,7 @@ export default function Appointments() {
       specialty: formData.specialty,
       appointment_date: formData.appointment_date,
       appointment_time: formData.appointment_time,
-      status: 'pending',
+      status: 'pending' as AppointmentStatus,
       notes: formData.notes,
     };
     setAppointments((prev) => [...prev, newAppt]);
@@ -346,12 +401,27 @@ export default function Appointments() {
     resetForm();
   };
 
+  const handleAttendConfirm = () => {
+    if (!appointmentToAttend) return;
+    const now = new Date().toISOString();
+    setAppointments((prev) =>
+      prev.map((a) =>
+        a.id === appointmentToAttend.id
+          ? { ...a, status: 'attended' as AppointmentStatus, attended_at: now }
+          : a
+      )
+    );
+    toast.success('Cita marcada como atendida');
+    toast.info(`Atención vinculada al historial médico de ${appointmentToAttend.patient_name}.`);
+    setAppointmentToAttend(null);
+  };
+
   const handleCancelConfirm = () => {
     if (!appointmentToCancel || !cancelReason.trim()) return;
     setAppointments((prev) =>
       prev.map((a) =>
         a.id === appointmentToCancel.id
-          ? { ...a, status: 'cancelled', cancellation_reason: cancelReason.trim() }
+          ? { ...a, status: 'cancelled' as AppointmentStatus, cancellation_reason: cancelReason.trim() }
           : a
       )
     );
@@ -363,7 +433,6 @@ export default function Appointments() {
 
   const handleRescheduleConfirm = () => {
     if (!appointmentToReschedule || !rescheduleDate || !rescheduleTime) return;
-
     const newAppt: Appointment = {
       id: appointments.length + 1,
       patient_id: appointmentToReschedule.patient_id,
@@ -371,23 +440,20 @@ export default function Appointments() {
       specialty: appointmentToReschedule.specialty,
       appointment_date: rescheduleDate,
       appointment_time: rescheduleTime,
-      status: 'confirmed',
+      status: 'confirmed' as AppointmentStatus,
       notes: appointmentToReschedule.notes,
     };
-
     setAppointments((prev) =>
       prev
         .map((a) =>
-          a.id === appointmentToReschedule.id ? { ...a, status: 'rescheduled' } : a
+          a.id === appointmentToReschedule.id ? { ...a, status: 'rescheduled' as AppointmentStatus } : a
         )
         .concat(newAppt)
     );
-
     toast.success('Cita reprogramada exitosamente');
     toast.info(
       `Notificación enviada a ${appointmentToReschedule.patient_name} con la nueva fecha: ${formatDate(rescheduleDate)} a las ${rescheduleTime}.`
     );
-
     setAppointmentToReschedule(null);
     setRescheduleDate('');
     setRescheduleTime('');
@@ -499,6 +565,54 @@ export default function Appointments() {
       {/* Table */}
       <DataTable columns={columns} data={filteredAppointments} customActions={customActions} />
 
+      {/* ── Attend Confirmation Modal ───────────────────────────────────────── */}
+      {appointmentToAttend && (
+        <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Marcar como Atendida</h3>
+                <p className="text-sm text-gray-500">
+                  Confirme que el paciente fue atendido en esta cita.
+                </p>
+              </div>
+            </div>
+
+            <AppointmentSummary appt={appointmentToAttend} />
+
+            {/* Auto-link notice */}
+            <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+              <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-green-800">
+                La atención se registrará a las{' '}
+                <span className="font-medium">{formatDateTime(new Date().toISOString())}</span>{' '}
+                y quedará vinculada automáticamente al historial médico del paciente.
+              </p>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setAppointmentToAttend(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleAttendConfirm}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Marcar como atendida
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── New Appointment Modal ───────────────────────────────────────────── */}
       {showModal && (
         <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -561,7 +675,9 @@ export default function Appointments() {
                   required
                   min={today}
                   value={formData.appointment_date}
-                  onChange={(e) => setFormData({ ...formData, appointment_date: e.target.value, appointment_time: '' })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, appointment_date: e.target.value, appointment_time: '' })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -630,35 +746,12 @@ export default function Appointments() {
               </div>
             </div>
 
-            {/* Current appointment summary */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-5 space-y-2.5 text-sm">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Cita actual</p>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Paciente</span>
-                <span className="font-medium text-gray-900">{appointmentToReschedule.patient_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Doctor</span>
-                <span className="font-medium text-gray-900">{appointmentToReschedule.doctor_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Especialidad</span>
-                <span className="font-medium text-gray-900">{appointmentToReschedule.specialty}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Fecha y hora</span>
-                <span className="font-medium text-gray-900">
-                  {formatDate(appointmentToReschedule.appointment_date)} — {appointmentToReschedule.appointment_time}
-                </span>
-              </div>
-            </div>
+            <div className="mb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Cita actual</div>
+            <AppointmentSummary appt={appointmentToReschedule} />
 
-            {/* New date & time */}
-            <div className="space-y-4">
+            <div className="mt-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nueva fecha *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nueva fecha *</label>
                 <input
                   type="date"
                   required
@@ -671,9 +764,7 @@ export default function Appointments() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nuevo horario disponible *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nuevo horario disponible *</label>
                 {!rescheduleDate ? (
                   <p className="text-sm text-gray-400 italic">
                     Seleccione una fecha para ver los horarios disponibles.
@@ -729,28 +820,9 @@ export default function Appointments() {
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-5 space-y-2.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Paciente</span>
-                <span className="font-medium text-gray-900">{appointmentToCancel.patient_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Doctor</span>
-                <span className="font-medium text-gray-900">{appointmentToCancel.doctor_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Especialidad</span>
-                <span className="font-medium text-gray-900">{appointmentToCancel.specialty}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Fecha y hora</span>
-                <span className="font-medium text-gray-900">
-                  {formatDate(appointmentToCancel.appointment_date)} — {appointmentToCancel.appointment_time}
-                </span>
-              </div>
-            </div>
+            <AppointmentSummary appt={appointmentToCancel} />
 
-            <div className="mb-5">
+            <div className="mt-5 mb-5">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Motivo de cancelación *
               </label>

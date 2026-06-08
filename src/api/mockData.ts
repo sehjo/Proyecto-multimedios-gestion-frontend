@@ -57,6 +57,7 @@ export const MOCK_APPOINTMENTS: {
   status: AppointmentStatus;
   notes: string;
   cancellation_reason?: string;
+  attended_at?: string;
 }[] = [
   {
     id: 1,

@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   X,
+  History,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -21,11 +22,17 @@ export default function Layout() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Pacientes', href: '/patients', icon: UserCircle },
+    { name: 'Historial Médico', href: '/medical-history', icon: History },
     { name: 'Usuarios', href: '/users', icon: Users },
     { name: 'Configuración', href: '/settings', icon: Settings },
   ];
 
-  const currentPageTitle = navigation.find((item) => item.href === location.pathname)?.name ?? 'Página no encontrada';
+  const isNavActive = (href: string) =>
+    href === '/'
+      ? location.pathname === '/'
+      : location.pathname === href || location.pathname.startsWith(href + '/');
+
+  const currentPageTitle = navigation.find((item) => isNavActive(item.href))?.name ?? 'Página no encontrada';
 
   useEffect(() => {
     document.title = `${currentPageTitle} | CCSS Consultorio`;
@@ -89,7 +96,7 @@ export default function Layout() {
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
+            const isActive = isNavActive(item.href);
             return (
               <Link
                 key={item.name}

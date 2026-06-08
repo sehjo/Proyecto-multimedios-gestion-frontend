@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserCircle, Users, TrendingUp, Calendar } from 'lucide-react';
+import { UserCircle, Users, TrendingUp, Calendar, History } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import StatsCard from '../components/StatsCard';
 import { getPatients, getUsers } from '../../api/services';
@@ -130,6 +130,13 @@ export default function Dashboard() {
             >
               <Users className="w-6 h-6 text-blue-600 mb-2" />
               <p className="text-sm font-medium text-gray-900">Gestionar Usuarios</p>
+            </button>
+            <button
+              onClick={() => navigate('/medical-history')}
+              className="p-4 border-2 border-dashed border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
+            >
+              <History className="w-6 h-6 text-blue-600 mb-2" />
+              <p className="text-sm font-medium text-gray-900">Ver Historiales</p>
             </button>
           </div>
         </div>

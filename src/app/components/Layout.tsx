@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   UserCircle,
+  CalendarDays,
   ClipboardList,
   Settings,
   LogOut,
@@ -21,6 +22,7 @@ export default function Layout() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Pacientes', href: '/patients', icon: UserCircle },
+    { name: 'Citas', href: '/appointments', icon: CalendarDays },
     { name: 'Usuarios', href: '/users', icon: Users },
     { name: 'Configuración', href: '/settings', icon: Settings },
   ];

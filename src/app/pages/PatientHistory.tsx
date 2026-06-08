@@ -11,6 +11,8 @@ import {
   ShieldOff,
   Plus,
   X,
+  Pencil,
+  Clock,
 } from 'lucide-react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { toast } from 'sonner';
@@ -39,6 +41,20 @@ const formatDate = (dateStr: string) => {
   }
 };
 
+const formatDateTime = (dateStr: string) => {
+  try {
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  } catch {
+    return dateStr;
+  }
+};
+
 type Entry = (typeof MOCK_HISTORY_ENTRIES)[number];
 
 type FormErrors = {
@@ -52,6 +68,14 @@ const emptyForm = () => ({
   diagnosis: '',
   treatment: '',
   observations: '',
+});
+
+const entryToForm = (entry: Entry) => ({
+  consultation_date: entry.consultation_date.split('T')[0],
+  disease_id: entry.disease_id ? String(entry.disease_id) : '',
+  diagnosis: entry.diagnosis,
+  treatment: entry.treatment,
+  observations: entry.observations,
 });
 
 export default function PatientHistory() {
@@ -68,15 +92,22 @@ export default function PatientHistory() {
     )
   );
 
+  // HU-034: filter state
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [doctorSearch, setDoctorSearch] = useState('');
   const [diagnosisSearch, setDiagnosisSearch] = useState('');
 
+  // HU-035: create modal state
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // HU-036: edit modal state
+  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [editErrors, setEditErrors] = useState<FormErrors>({});
 
   const getDoctorName = (doctorId: number) => {
     const u = MOCK_USERS.find((x) => x.id === doctorId);
@@ -85,10 +116,13 @@ export default function PatientHistory() {
 
   const currentDoctorName = `${MOCK_CURRENT_USER.name} ${MOCK_CURRENT_USER.lastname}`;
 
+  const canEdit = (entry: Entry) =>
+    MOCK_CURRENT_USER.role === 'admin' || MOCK_CURRENT_USER.id === entry.doctor_id;
+
+  // HU-034: filtered + sorted view
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
       const entryDate = new Date(entry.consultation_date);
-
       if (dateFrom) {
         const from = new Date(dateFrom);
         from.setHours(0, 0, 0, 0);
@@ -130,6 +164,7 @@ export default function PatientHistory() {
     }
   };
 
+  // HU-035: create handlers
   const openModal = () => {
     setFormData(emptyForm());
     setErrors({});
@@ -148,26 +183,15 @@ export default function PatientHistory() {
       disease_id: diseaseId,
       diagnosis: disease ? disease.name : prev.diagnosis,
     }));
-    if (disease) {
-      setErrors((prev) => ({ ...prev, diagnosis: undefined }));
-    }
+    if (disease) setErrors((prev) => ({ ...prev, diagnosis: undefined }));
   };
 
   const handleSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
-
     const newErrors: FormErrors = {};
-    if (!formData.consultation_date.trim()) {
-      newErrors.consultation_date = 'Este campo es obligatorio';
-    }
-    if (!formData.diagnosis.trim()) {
-      newErrors.diagnosis = 'Este campo es obligatorio';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    if (!formData.consultation_date.trim()) newErrors.consultation_date = 'Este campo es obligatorio';
+    if (!formData.diagnosis.trim()) newErrors.diagnosis = 'Este campo es obligatorio';
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
     const newEntry: Entry = {
       id: Math.max(0, ...entries.map((e) => e.id), ...MOCK_HISTORY_ENTRIES.map((e) => e.id)) + 1,
@@ -185,10 +209,67 @@ export default function PatientHistory() {
         (a, b) => new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime()
       )
     );
-
     toast.success('Registro guardado exitosamente');
     logActivity({ type: 'Nuevo registro en historial', name: newEntry.diagnosis });
     closeModal();
+  };
+
+  // HU-036: edit handlers
+  const openEditModal = (entry: Entry) => {
+    if (!canEdit(entry)) {
+      toast.error('No tienes permiso para editar este registro');
+      return;
+    }
+    setEditingEntry(entry);
+    setEditForm(entryToForm(entry));
+    setEditErrors({});
+  };
+
+  const closeEditModal = () => {
+    setEditingEntry(null);
+    setEditErrors({});
+  };
+
+  const handleEditDiseaseSelect = (diseaseId: string) => {
+    const disease = MOCK_DISEASES.find((d) => String(d.id) === diseaseId);
+    setEditForm((prev) => ({
+      ...prev,
+      disease_id: diseaseId,
+      diagnosis: disease ? disease.name : prev.diagnosis,
+    }));
+    if (disease) setEditErrors((prev) => ({ ...prev, diagnosis: undefined }));
+  };
+
+  const handleEditSubmit = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    const newErrors: FormErrors = {};
+    if (!editForm.consultation_date.trim()) newErrors.consultation_date = 'Este campo es obligatorio';
+    if (!editForm.diagnosis.trim()) newErrors.diagnosis = 'Este campo es obligatorio';
+    if (Object.keys(newErrors).length > 0) { setEditErrors(newErrors); return; }
+
+    const now = new Date().toISOString();
+    setEntries((prev) =>
+      prev
+        .map((e) =>
+          e.id === editingEntry!.id
+            ? {
+                ...e,
+                consultation_date: new Date(editForm.consultation_date).toISOString(),
+                diagnosis: editForm.diagnosis.trim(),
+                disease_id: editForm.disease_id ? Number(editForm.disease_id) : null,
+                treatment: editForm.treatment.trim(),
+                observations: editForm.observations.trim(),
+                updated_at: now,
+              }
+            : e
+        )
+        .sort(
+          (a, b) => new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime()
+        )
+    );
+    toast.success('Registro actualizado exitosamente');
+    logActivity({ type: 'Registro editado en historial', name: editForm.diagnosis });
+    closeEditModal();
   };
 
   if (!ALLOWED_ROLES.includes(MOCK_CURRENT_USER.role)) {
@@ -323,10 +404,7 @@ export default function PatientHistory() {
             : `${filteredEntries.length} registro${filteredEntries.length !== 1 ? 's' : ''}`}
         </p>
         {filteredEntries.length > 1 && (
-          <button
-            onClick={toggleAll}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-          >
+          <button onClick={toggleAll} className="text-sm text-blue-600 hover:text-blue-700 font-medium">
             {allExpanded ? 'Colapsar todos' : 'Expandir todos'}
           </button>
         )}
@@ -378,23 +456,25 @@ export default function PatientHistory() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs font-medium text-gray-400 block mb-1">
-                            {formatDate(entry.consultation_date)}
-                          </span>
-                          <h3 className="font-semibold text-gray-900 truncate">
-                            {entry.diagnosis}
-                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="text-xs font-medium text-gray-400">
+                              {formatDate(entry.consultation_date)}
+                            </span>
+                            {entry.updated_at && (
+                              <span className="flex items-center gap-1 text-xs text-amber-600">
+                                <Clock className="w-3 h-3" />
+                                Modificado: {formatDateTime(entry.updated_at)}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="font-semibold text-gray-900 truncate">{entry.diagnosis}</h3>
                           <span className="flex items-center gap-1 text-sm text-gray-500 mt-1">
                             <User className="w-3.5 h-3.5" />
                             {doctorName}
                           </span>
                         </div>
                         <div className="flex-shrink-0 text-gray-400 mt-1">
-                          {isExpanded ? (
-                            <ChevronUp className="w-4 h-4" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4" />
-                          )}
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </div>
                       </div>
                     </button>
@@ -439,6 +519,18 @@ export default function PatientHistory() {
                             )}
                           </p>
                         </div>
+
+                        {/* HU-036: Edit action */}
+                        <div className="flex justify-end border-t border-gray-200 pt-3">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(entry)}
+                            className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Editar registro
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -453,20 +545,14 @@ export default function PatientHistory() {
       {showModal && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            {/* Modal header */}
             <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
               <h2 className="text-xl font-semibold text-gray-900">Nuevo registro</h2>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
+              <button type="button" onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="p-6 space-y-5">
-              {/* Fecha de consulta * */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Fecha de consulta <span className="text-red-500">*</span>
@@ -478,16 +564,13 @@ export default function PatientHistory() {
                     setFormData((prev) => ({ ...prev, consultation_date: e.target.value }));
                     if (e.target.value) setErrors((prev) => ({ ...prev, consultation_date: undefined }));
                   }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.consultation_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.consultation_date ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                 />
                 {errors.consultation_date && (
                   <p className="text-red-500 text-xs mt-1">{errors.consultation_date}</p>
                 )}
               </div>
 
-              {/* Médico tratante (solo lectura) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Médico tratante <span className="text-red-500">*</span>
@@ -500,7 +583,6 @@ export default function PatientHistory() {
                 />
               </div>
 
-              {/* Seleccionar del catálogo (opcional) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Seleccionar enfermedad del catálogo
@@ -513,9 +595,7 @@ export default function PatientHistory() {
                 >
                   <option value="">— Seleccionar del catálogo —</option>
                   {MOCK_DISEASES.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
+                    <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
                 <p className="text-xs text-gray-400 mt-1">
@@ -523,7 +603,6 @@ export default function PatientHistory() {
                 </p>
               </div>
 
-              {/* Diagnóstico * */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Diagnóstico <span className="text-red-500">*</span>
@@ -538,23 +617,16 @@ export default function PatientHistory() {
                     setFormData((prev) => ({ ...prev, diagnosis: e.target.value }));
                     if (e.target.value.trim()) setErrors((prev) => ({ ...prev, diagnosis: undefined }));
                   }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
-                    errors.diagnosis ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${errors.diagnosis ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                 />
                 <div className="flex justify-between mt-1">
-                  {errors.diagnosis ? (
-                    <p className="text-red-500 text-xs">{errors.diagnosis}</p>
-                  ) : (
-                    <span />
-                  )}
+                  {errors.diagnosis ? <p className="text-red-500 text-xs">{errors.diagnosis}</p> : <span />}
                   <span className={`text-xs ${formData.diagnosis.length >= 500 ? 'text-red-500' : 'text-gray-400'}`}>
                     {formData.diagnosis.length}/500
                   </span>
                 </div>
               </div>
 
-              {/* Tratamiento indicado (opcional) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tratamiento indicado
@@ -575,7 +647,6 @@ export default function PatientHistory() {
                 </div>
               </div>
 
-              {/* Observaciones (opcional) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Observaciones
@@ -596,7 +667,6 @@ export default function PatientHistory() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3 pt-2 border-t border-gray-100">
                 <button
                   type="button"
@@ -610,6 +680,146 @@ export default function PatientHistory() {
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   Guardar registro
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Editar registro (HU-036) */}
+      {editingEntry && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
+              <h2 className="text-xl font-semibold text-gray-900">Editar registro</h2>
+              <button type="button" onClick={closeEditModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} noValidate className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fecha de consulta <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={editForm.consultation_date}
+                  onChange={(e) => {
+                    setEditForm((prev) => ({ ...prev, consultation_date: e.target.value }));
+                    if (e.target.value) setEditErrors((prev) => ({ ...prev, consultation_date: undefined }));
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${editErrors.consultation_date ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                />
+                {editErrors.consultation_date && (
+                  <p className="text-red-500 text-xs mt-1">{editErrors.consultation_date}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Médico tratante <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={getDoctorName(editingEntry.doctor_id)}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Seleccionar enfermedad del catálogo
+                  <span className="text-gray-400 font-normal ml-1">(opcional)</span>
+                </label>
+                <select
+                  value={editForm.disease_id}
+                  onChange={(e) => handleEditDiseaseSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none"
+                >
+                  <option value="">— Seleccionar del catálogo —</option>
+                  {MOCK_DISEASES.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Diagnóstico <span className="text-red-500">*</span>
+                  <span className="text-gray-400 font-normal ml-1">(máx. 500 caracteres)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  maxLength={500}
+                  value={editForm.diagnosis}
+                  onChange={(e) => {
+                    setEditForm((prev) => ({ ...prev, diagnosis: e.target.value }));
+                    if (e.target.value.trim()) setEditErrors((prev) => ({ ...prev, diagnosis: undefined }));
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${editErrors.diagnosis ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                />
+                <div className="flex justify-between mt-1">
+                  {editErrors.diagnosis ? <p className="text-red-500 text-xs">{editErrors.diagnosis}</p> : <span />}
+                  <span className={`text-xs ${editForm.diagnosis.length >= 500 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {editForm.diagnosis.length}/500
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tratamiento indicado
+                  <span className="text-gray-400 font-normal ml-1">(máx. 500 caracteres)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  maxLength={500}
+                  value={editForm.treatment}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, treatment: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <div className="text-right mt-1">
+                  <span className={`text-xs ${editForm.treatment.length >= 500 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {editForm.treatment.length}/500
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Observaciones
+                  <span className="text-gray-400 font-normal ml-1">(máx. 1000 caracteres)</span>
+                </label>
+                <textarea
+                  rows={4}
+                  maxLength={1000}
+                  value={editForm.observations}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, observations: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <div className="text-right mt-1">
+                  <span className={`text-xs ${editForm.observations.length >= 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {editForm.observations.length}/1000
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Guardar cambios
                 </button>
               </div>
             </form>

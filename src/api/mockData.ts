@@ -48,6 +48,7 @@ export const MOCK_HISTORY_ENTRIES: Array<{
   disease_id: number | null;
   treatment: string;
   observations: string;
+  updated_at?: string;
 }> = [
   // Carlos Méndez (patient_id: 1)
   {

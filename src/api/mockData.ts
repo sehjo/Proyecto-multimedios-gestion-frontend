@@ -161,6 +161,25 @@ export const MOCK_APPOINTMENTS: {
   },
 ];
 
+export type HistoryEntry = {
+  id: number;
+  patient_id: number;
+  consultation_date: string;
+  doctor_id: number;
+  diagnosis: string;
+  disease_id: number | null;
+  treatment: string;
+  observations: string;
+  updated_at?: string;
+  medications?: Array<{
+    id: number;
+    drug_id: number | null;
+    drug_name: string;
+    dose: string;
+    frequency: string;
+  }>;
+};
+
 export const MOCK_HISTORY_ENTRIES: Array<{
   id: number;
   patient_id: number;

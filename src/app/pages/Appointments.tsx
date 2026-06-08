@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Filter, X, AlertTriangle, XCircle, RefreshCw, CheckCircle } from 'lucide-react';
+import { Plus, Filter, X, AlertTriangle, XCircle, RefreshCw, CheckCircle, Info } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import DataTable from '../components/DataTable';
@@ -9,6 +9,7 @@ import {
   MOCK_APPOINTMENTS,
   type AppointmentStatus,
 } from '../../api/mockData';
+import { useHistory } from '../../context/HistoryContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -63,13 +64,6 @@ function formatDate(dateStr: string) {
   return `${day}/${month}/${year}`;
 }
 
-function formatDateTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString('es-CR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
 
 function bookedSlotsForDoctor(
   appointments: Appointment[],
@@ -192,6 +186,10 @@ export default function Appointments() {
 
   // Attend modal
   const [appointmentToAttend, setAppointmentToAttend] = useState<EnrichedAppointment | null>(null);
+  const [attendDiagnosis, setAttendDiagnosis] = useState('');
+  const [attendTreatment, setAttendTreatment] = useState('');
+  const [attendObservations, setAttendObservations] = useState('');
+  const [attendDiagnosisError, setAttendDiagnosisError] = useState('');
 
   // Cancel modal
   const [appointmentToCancel, setAppointmentToCancel] = useState<EnrichedAppointment | null>(null);
@@ -322,6 +320,10 @@ export default function Appointments() {
             toast.error('Esta cita fue reprogramada. Atienda la nueva cita.');
             return;
           }
+          setAttendDiagnosis('');
+          setAttendTreatment('');
+          setAttendObservations('');
+          setAttendDiagnosisError('');
           setAppointmentToAttend(row);
         },
         className: 'text-green-600 hover:bg-green-50',
@@ -407,8 +409,14 @@ export default function Appointments() {
     resetForm();
   };
 
+  const { linkAppointmentEntry } = useHistory();
+
   const handleAttendConfirm = () => {
     if (!appointmentToAttend) return;
+    if (!attendDiagnosis.trim()) {
+      setAttendDiagnosisError('El diagnóstico es obligatorio');
+      return;
+    }
     const now = new Date().toISOString();
     setAppointments((prev) =>
       prev.map((a) =>
@@ -417,8 +425,30 @@ export default function Appointments() {
           : a
       )
     );
-    toast.success('Cita marcada como atendida');
-    toast.info(`Atención vinculada al historial médico de ${appointmentToAttend.patient_name}.`);
+    linkAppointmentEntry({
+      id: 0,
+      patient_id: appointmentToAttend.patient_id,
+      consultation_date: now,
+      doctor_id: appointmentToAttend.doctor_id,
+      diagnosis: attendDiagnosis.trim(),
+      disease_id: null,
+      treatment: attendTreatment.trim(),
+      observations: attendObservations.trim(),
+      medications: [],
+    });
+    const patientId = appointmentToAttend.patient_id;
+    const patientName = appointmentToAttend.patient_name;
+    toast.success('Cita marcada como atendida y vinculada al historial médico', {
+      description: `Se creó un registro de atención para ${patientName}.`,
+      action: {
+        label: 'Ver historial',
+        onClick: () => navigate(`/medical-history/${patientId}`),
+      },
+    });
+    setAttendDiagnosis('');
+    setAttendTreatment('');
+    setAttendObservations('');
+    setAttendDiagnosisError('');
     setAppointmentToAttend(null);
   };
 
@@ -571,49 +601,127 @@ export default function Appointments() {
       {/* Table */}
       <DataTable columns={columns} data={filteredAppointments} customActions={customActions} />
 
-      {/* ── Attend Confirmation Modal ───────────────────────────────────────── */}
+      {/* ── Attend Modal with Medical Record Form ──────────────────────────── */}
       {appointmentToAttend && (
         <div className="app-modal-overlay fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
-            <div className="flex items-start gap-3 mb-5">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 pb-4 border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Registrar Atención</h3>
+                  <p className="text-sm text-gray-500">
+                    Complete el registro médico para vincular esta cita al historial del paciente.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Marcar como Atendida</h3>
-                <p className="text-sm text-gray-500">
-                  Confirme que el paciente fue atendido en esta cita.
+            </div>
+
+            <div className="p-6 space-y-5">
+              <AppointmentSummary appt={appointmentToAttend} />
+
+              <div className="border-t border-gray-200 pt-4">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
+                  Registro de la atención
                 </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Diagnóstico <span className="text-red-500">*</span>
+                      <span className="text-gray-400 font-normal ml-1">(máx. 500 caracteres)</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      maxLength={500}
+                      placeholder="Describa el diagnóstico de la consulta..."
+                      value={attendDiagnosis}
+                      onChange={(e) => {
+                        setAttendDiagnosis(e.target.value);
+                        if (e.target.value.trim()) setAttendDiagnosisError('');
+                      }}
+                      autoFocus
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none text-sm ${
+                        attendDiagnosisError ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                      }`}
+                    />
+                    <div className="flex justify-between mt-1">
+                      {attendDiagnosisError
+                        ? <p className="text-red-500 text-xs">{attendDiagnosisError}</p>
+                        : <span />
+                      }
+                      <span className={`text-xs ${attendDiagnosis.length >= 500 ? 'text-red-500' : 'text-gray-400'}`}>
+                        {attendDiagnosis.length}/500
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tratamiento indicado
+                      <span className="text-gray-400 font-normal ml-1">(opcional, máx. 500 caracteres)</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      maxLength={500}
+                      placeholder="Describa el tratamiento indicado al paciente..."
+                      value={attendTreatment}
+                      onChange={(e) => setAttendTreatment(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none text-sm"
+                    />
+                    <p className="text-right text-xs text-gray-400 mt-0.5">{attendTreatment.length}/500</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Observaciones
+                      <span className="text-gray-400 font-normal ml-1">(opcional, máx. 1000 caracteres)</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      maxLength={1000}
+                      placeholder="Observaciones adicionales de la consulta..."
+                      value={attendObservations}
+                      onChange={(e) => setAttendObservations(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none text-sm"
+                    />
+                    <p className="text-right text-xs text-gray-400 mt-0.5">{attendObservations.length}/1000</p>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                    <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-blue-800">
+                      Los medicamentos indicados pueden agregarse desde el{' '}
+                      <span className="font-medium">historial del paciente</span> después de guardar.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <AppointmentSummary appt={appointmentToAttend} />
-
-            {/* Auto-link notice */}
-            <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-              <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-green-800">
-                La atención se registrará a las{' '}
-                <span className="font-medium">{formatDateTime(new Date().toISOString())}</span>{' '}
-                y quedará vinculada automáticamente al historial médico del paciente.
-              </p>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                type="button"
-                onClick={() => setAppointmentToAttend(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleAttendConfirm}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Marcar como atendida
-              </button>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAttendDiagnosis('');
+                    setAttendTreatment('');
+                    setAttendObservations('');
+                    setAttendDiagnosisError('');
+                    setAppointmentToAttend(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAttendConfirm}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  Confirmar y vincular al historial
+                </button>
+              </div>
             </div>
           </div>
         </div>

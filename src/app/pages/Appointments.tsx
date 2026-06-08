@@ -250,7 +250,13 @@ export default function Appointments() {
       rescheduleDate,
       appointmentToReschedule.id
     );
-    return TIME_SLOTS.filter((s) => !booked.includes(s));
+
+    const originalSlot = appointmentToReschedule.appointment_time.substring(0, 5);
+    return TIME_SLOTS.filter((s) => {
+      if (booked.includes(s)) return false;
+      if (rescheduleDate === appointmentToReschedule.appointment_date && s === originalSlot) return false;
+      return true;
+    });
   }, [appointmentToReschedule, rescheduleDate, appointments]);
 
   const enrichedAppointments = useMemo<EnrichedAppointment[]>(

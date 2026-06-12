@@ -1,10 +1,25 @@
+/**
+ * Medical Specialties Catalog (Módulo de Especialidades)
+ *
+ * User story: As an administrator I want to see the complete catalog of registered
+ * medical specialties in order to know the available care areas.
+ */
+
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
+/** Represents a single medical specialty entry in the catalog. */
 export type Specialty = {
   id: number;
   name: string;
 };
 
+/**
+ * Context shape exposed to consumers.
+ * - `specialties`      : current list of specialties (Scenario 1).
+ * - `addSpecialty`     : creates a new entry in the catalog.
+ * - `updateSpecialty`  : edits the name of an existing entry.
+ * - `deleteSpecialty`  : removes an entry from the catalog.
+ */
 type SpecialtiesContextType = {
   specialties: Specialty[];
   addSpecialty: (name: string) => void;
@@ -23,6 +38,7 @@ const MOCK_SPECIALTIES: Specialty[] = [
 
 const SpecialtiesContext = createContext<SpecialtiesContextType | undefined>(undefined);
 
+/** Provides specialty CRUD state to the component tree. Wrap the specialties view with this provider. */
 export function SpecialtiesProvider({ children }: { children: ReactNode }) {
   const [specialties, setSpecialties] = useState<Specialty[]>(MOCK_SPECIALTIES);
   const [nextId, setNextId] = useState(MOCK_SPECIALTIES.length + 1);
@@ -48,6 +64,7 @@ export function SpecialtiesProvider({ children }: { children: ReactNode }) {
   return <SpecialtiesContext.Provider value={value}>{children}</SpecialtiesContext.Provider>;
 }
 
+/** Hook to consume the SpecialtiesContext. Must be called inside a SpecialtiesProvider. */
 export function useSpecialties() {
   const ctx = useContext(SpecialtiesContext);
   if (!ctx) throw new Error('useSpecialties must be used within a SpecialtiesProvider');

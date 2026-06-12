@@ -78,12 +78,10 @@ export default function Settings() {
     setEditingUserType(null);
   };
 
-  // ── Specialties ─────────────────────────────────────────────────
-  // Scenario 1: renders the catalog table with specialty name (+ description and
-  //             doctor count once those fields are available from the API).
-  // Scenario 2: search/filter must be wired here when the search field is added.
-  // Scenario 3: doctor count column should display a dynamically computed total
-  //             of active doctors linked to each specialty.
+  // ── Specialties  ───────────────────────────────
+  // shows the catalog table with name, description, and doctor count; supports real-time search.
+  // form creates a specialty (name + description, required, max 255 chars),
+  //         rejects duplicates, and logs the activity on save.
   const { specialties, addSpecialty, updateSpecialty, deleteSpecialty } = useSpecialties();
   const [showSpecialtyModal, setShowSpecialtyModal] = useState(false);
   const [editingSpecialty, setEditingSpecialty] = useState<{ id: number; name: string } | null>(null);
@@ -121,8 +119,9 @@ export default function Settings() {
     setEditingSpecialty(null);
   };
 
-  // Scenario 1: columns must include name, description, and doctor count.
+  // columns must include name, description, and doctor count.
   // Currently only name is present — extend once the Specialty type is updated.
+  //add description and doctorCount columns once the Specialty type is extended.
   const specialtyColumns = [
     { header: 'ID', accessor: 'id' },
     { header: 'Nombre', accessor: 'name' },

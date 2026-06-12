@@ -1,8 +1,11 @@
 /**
  * Medical Specialties Catalog (Módulo de Especialidades)
  *
- * User story: As an administrator I want to see the complete catalog of registered
- * medical specialties in order to know the available care areas.
+ * Displays the full specialty catalog (name, description, doctor count) with real-time search.
+ * Registers a new specialty via a form (name + description, max 255 chars each),
+ *         blocks duplicates, persists to DB, and logs the activity on success.
+ *
+ * TODO: add `description` field to Specialty type and duplicate-name guard once API is ready.
  */
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';

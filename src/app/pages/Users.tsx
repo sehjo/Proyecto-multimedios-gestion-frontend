@@ -56,6 +56,9 @@ export default function Users() {
     }
   };
 
+  // Submits the form: HTML5 `required` attributes prevent submission when mandatory fields are empty,
+  // showing per-field browser validation messages. On success, persists the record, refreshes the
+  // table, and logs the action to the activity history.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -140,6 +143,8 @@ export default function Users() {
   // Builds an id→userType lookup so column renderers can resolve names without iterating the array each time.
   const userTypesMap = useMemo(() => new Map(userTypes.map((t: any) => [t.id, t])), [userTypes]);
 
+  // Shows the specialty dropdown only when the selected user type is "doctor",
+  // keeping it required so the field is enforced as part of registration validation.
   const isDoctorSelected = useMemo(() => {
     if (!formData.user_type_id) return false;
     const selectedType = userTypesMap.get(parseInt(formData.user_type_id)) ?? userTypesMap.get(formData.user_type_id);

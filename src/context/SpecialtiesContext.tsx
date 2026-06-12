@@ -5,6 +5,9 @@
  * Registers a new specialty via a form (name + description, max 255 chars each),
  *         blocks duplicates, persists to DB, and logs the activity on success.
  *
+ * HU-017: Edits an existing specialty — opens a pre-populated modal, applies the same validations
+ *         as creation, and propagates changes to the catalog and linked doctor profiles.
+ *
  * TODO: add `description` field to Specialty type and duplicate-name guard once API is ready.
  */
 

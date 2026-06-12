@@ -149,8 +149,11 @@ export default function Users() {
   // Builds an id→userType lookup so column renderers can resolve names without iterating the array each time.
   const userTypesMap = useMemo(() => new Map(userTypes.map((t: any) => [t.id, t])), [userTypes]);
 
-  // Shows the specialty dropdown only when the selected user type is "doctor",
-  // keeping it required so the field is enforced as part of registration validation.
+  // Shows the specialty dropdown only when the selected user type is "doctor".
+  // The dropdown is populated from SpecialtiesContext (all active registered specialties).
+  // On save, the new specialty_id is sent to the API and the table reflects the change immediately.
+  // NOTE: changing a specialty must not modify historical appointment records — the API is
+  // responsible for preserving the original specialty on past entries.
   const isDoctorSelected = useMemo(() => {
     if (!formData.user_type_id) return false;
     const selectedType = userTypesMap.get(parseInt(formData.user_type_id)) ?? userTypesMap.get(formData.user_type_id);

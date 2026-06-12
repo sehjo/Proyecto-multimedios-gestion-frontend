@@ -7,6 +7,8 @@
  *
  * HU-017: Edits an existing specialty — opens a pre-populated modal, applies the same validations
  *         as creation, and propagates changes to the catalog and linked doctor profiles.
+ * HU-018: Deletes a specialty — shows a named confirmation dialog, blocks removal if doctors are
+ *         still assigned (data integrity), and permanently removes the record logging the activity.
  *
  * TODO: add `description` field to Specialty type and duplicate-name guard once API is ready.
  */

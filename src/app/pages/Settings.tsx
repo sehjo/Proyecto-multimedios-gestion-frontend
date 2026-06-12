@@ -82,6 +82,7 @@ export default function Settings() {
   // HU-015: shows the catalog table with name, description, and doctor count; supports real-time search.
   // HU-016: form creates a specialty (name + description, required, max 255 chars), rejects duplicates, logs activity.
   // HU-017: 'Edit' opens the modal pre-populated with current data; same validations apply; saves propagate to doctor profiles.
+  // HU-018: 'Delete' shows a named confirmation dialog; blocks if doctors are assigned; permanently removes the record and logs the action.
   const { specialties, addSpecialty, updateSpecialty, deleteSpecialty } = useSpecialties();
   const [showSpecialtyModal, setShowSpecialtyModal] = useState(false);
   const [editingSpecialty, setEditingSpecialty] = useState<{ id: number; name: string } | null>(null);

@@ -114,6 +114,9 @@ export default function Users() {
     setShowModal(true);
   };
 
+  // Shows a named confirmation dialog before deleting. Permanently removes the record,
+  // refreshes the table, and logs the action.
+  // TODO: block deletion if the doctor has future appointments assigned (data integrity guard).
   const handleDelete = async (user: any) => {
     if (window.confirm('¿Está seguro de eliminar este usuario?')) {
       try {

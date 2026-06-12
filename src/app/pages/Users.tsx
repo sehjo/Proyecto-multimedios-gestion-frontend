@@ -42,6 +42,7 @@ export default function Users() {
     }
   }, [location.search, location.pathname, navigate]);
 
+  // Fetches the full user list from the API on mount; falls back to an empty array if the request fails.
   const loadData = async () => {
     try {
       setLoading(true);
@@ -136,6 +137,7 @@ export default function Users() {
     setEditingUser(null);
   };
 
+  // Builds an id→userType lookup so column renderers can resolve names without iterating the array each time.
   const userTypesMap = useMemo(() => new Map(userTypes.map((t: any) => [t.id, t])), [userTypes]);
 
   const isDoctorSelected = useMemo(() => {
@@ -144,6 +146,7 @@ export default function Users() {
     return selectedType?.name?.toLowerCase() === 'doctor';
   }, [formData.user_type_id, userTypesMap]);
 
+  // Filters the user list in real time as the search term changes; matches against name, lastname, or email.
   const filteredUsers = useMemo(() => {
     const lower = searchTerm.toLowerCase();
     return users.filter((user: any) =>
@@ -153,6 +156,7 @@ export default function Users() {
     );
   }, [users, searchTerm]);
 
+  // Table columns: user_type_id is resolved to a readable label via userTypesMap instead of showing the raw ID.
   const columns = useMemo(() => [
     { header: 'ID', accessor: 'id' },
     { header: 'Nombre', accessor: 'name' },

@@ -98,6 +98,9 @@ export default function Users() {
     }
   };
 
+  // Opens the modal pre-populated with the selected user's current data so the admin can edit any field.
+  // Password is intentionally left blank — the field is optional on edit (only sent if filled in).
+  // Same validations as creation apply; on save the table refreshes and the change is logged.
   const handleEdit = (user: any) => {
     setEditingUser(user);
     setFormData({

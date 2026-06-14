@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   History,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,6 +28,7 @@ export default function Layout() {
     { name: 'Historial Médico', href: '/medical-history', icon: History },
     { name: 'Usuarios', href: '/users', icon: Users },
     { name: 'Configuración', href: '/settings', icon: Settings },
+    { name: 'Ocupación por Doctor', href: '/reports/doctors', icon: BarChart3 },
   ];
 
   const isNavActive = (href: string) =>

@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   History,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,6 +28,7 @@ export default function Layout() {
     { name: 'Historial Médico', href: '/medical-history', icon: History },
     { name: 'Usuarios', href: '/users', icon: Users },
     { name: 'Configuración', href: '/settings', icon: Settings },
+    { name: 'Auditoría', href: '/audit', icon: ShieldCheck },
   ];
 
   const isNavActive = (href: string) =>

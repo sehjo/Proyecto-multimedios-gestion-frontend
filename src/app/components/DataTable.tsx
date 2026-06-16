@@ -8,7 +8,8 @@ interface Column {
 }
 
 export interface CustomAction {
-  icon: React.ReactNode;
+  // Static node, or a per-row function (e.g. to switch icon by row.status).
+  icon: React.ReactNode | ((row: any) => React.ReactNode);
   label: string;
   onClick: (row: any) => void;
   className?: string; // e.g. text-green-600 hover:bg-green-50
@@ -78,7 +79,7 @@ function DataTable({ columns, data, onEdit, onDelete, customActions }: DataTable
                             className={`p-2 rounded-lg transition-colors ${action.className || 'text-gray-600 hover:bg-gray-100'}`}
                             title={action.label}
                           >
-                            {action.icon}
+                            {typeof action.icon === 'function' ? action.icon(row) : action.icon}
                           </button>
                         ))}
                         {onEdit && (

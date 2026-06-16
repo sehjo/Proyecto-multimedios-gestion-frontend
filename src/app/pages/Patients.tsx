@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, AlertTriangle } from 'lucide-react';
+import { Plus, Search, AlertTriangle, Eye } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import DataTable from '../components/DataTable';
 import { getPatients, createPatient, updatePatient, deletePatient, getUsers } from '../../api/services';
@@ -165,6 +165,15 @@ export default function Patients() {
     { header: 'Padecimiento', accessor: 'suffering', render: (value: any) => value || '-' },
   ], []);
 
+  const customActions = useMemo(() => [
+    {
+      icon: <Eye className="w-4 h-4" />,
+      label: 'Ver historial médico',
+      onClick: (patient: any) => navigate(`/medical-history/${patient.id}`),
+      className: 'text-emerald-600 hover:bg-emerald-50',
+    },
+  ], [navigate]);
+
   return (
     <div className="app-page p-8">
       <div className="app-page-header flex items-center justify-between mb-6 gap-4">
@@ -208,6 +217,7 @@ export default function Patients() {
           data={filteredPatients}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          customActions={customActions}
         />
       )}
 

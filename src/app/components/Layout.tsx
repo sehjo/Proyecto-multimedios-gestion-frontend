@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   UserCircle,
+  ShieldCheck,
   ClipboardList,
   Settings,
   LogOut,
@@ -22,6 +23,7 @@ export default function Layout() {
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Pacientes', href: '/patients', icon: UserCircle },
     { name: 'Usuarios', href: '/users', icon: Users },
+    { name: 'Roles', href: '/roles', icon: ShieldCheck },
     { name: 'Configuración', href: '/settings', icon: Settings },
   ];
 

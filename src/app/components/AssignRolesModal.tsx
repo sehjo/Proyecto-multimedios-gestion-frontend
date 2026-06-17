@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Search, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { getUsers, getUser } from '../../api/usersService';
@@ -37,6 +37,11 @@ export default function AssignRolesModal({ onClose, onAssigned }: AssignRolesMod
   const [search, setSearch]       = useState('');
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
 
+  // Guards against a race: clicking another user before getUser() resolves would
+  // let the late response overwrite the current selection. Each selectUser bumps
+  // the token and bails if it's no longer the latest after the await.
+  const selectionToken = useRef(0);
+
   // Role ids selected for the user, and the ones it had on load (for the diff).
   const [selected, setSelected]   = useState<Set<number>>(new Set());
   const [initial, setInitial]     = useState<Set<number>>(new Set());
@@ -73,15 +78,17 @@ export default function AssignRolesModal({ onClose, onAssigned }: AssignRolesMod
     u.roles?.length ? u.roles.join(', ') : '—';
 
   const selectUser = async (u: UserRow) => {
+    const token = ++selectionToken.current;   // mark this as the latest selection
     setSelectedUser(u);
     setSelected(new Set());
     setInitial(new Set());
     setLoadingRoles(true);
     try {
-      // Fetch the full user. show() wraps the resource as { data: {...} }, but be
-      // defensive: roles may live at res.data.roles or res.roles, and each role may
-      // be a name string or a { id, name } object.
+      // Fetch the full user. This backend returns the user PLAIN (no { data }
+      // wrapper) on show, but be defensive: roles may live at res.data.roles or
+      // res.roles, and each role may be a name string or a { id, name } object.
       const res: any = await getUser(u.id);
+      if (token !== selectionToken.current) return;   // a newer click won; discard
       const payload = res?.data ?? res ?? {};
       const rawRoles: any[] = payload.roles ?? u.roles ?? [];
 
@@ -96,9 +103,9 @@ export default function AssignRolesModal({ onClose, onAssigned }: AssignRolesMod
       setSelected(new Set(ids));
       setInitial(new Set(ids));
     } catch {
-      toast.error('Error al cargar los roles del usuario.');
+      if (token === selectionToken.current) toast.error('Error al cargar los roles del usuario.');
     } finally {
-      setLoadingRoles(false);
+      if (token === selectionToken.current) setLoadingRoles(false);
     }
   };
 

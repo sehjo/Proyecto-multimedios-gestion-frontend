@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { loginUser, logoutUser } from '../api/services';
 
@@ -89,24 +89,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // UX gate only — never a security boundary. The backend enforces permissions
   // on every endpoint, so this just hides controls the user can't use.
-  const can = (permission: string): boolean =>
-    user?.permissions?.includes(permission) ?? false;
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isAuthenticated: !!token,
-        isLoading,
-        login,
-        logout,
-        can,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const can = useCallback(
+    (permission: string): boolean => user?.permissions?.includes(permission) ?? false,
+    [user]
   );
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isAuthenticated: !!token,
+      isLoading,
+      login,
+      logout,
+      can,
+    }),
+    [user, token, isLoading, can]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

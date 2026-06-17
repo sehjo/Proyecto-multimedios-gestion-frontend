@@ -16,16 +16,18 @@ import { useAuth } from '../../context/AuthContext';
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Hide nav entries the user can't access (UX gate; the backend still enforces).
+  // `perm: null` → always visible. Otherwise needs the matching read permission.
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Pacientes', href: '/patients', icon: UserCircle },
-    { name: 'Usuarios', href: '/users', icon: Users },
-    { name: 'Roles', href: '/roles', icon: ShieldCheck },
-    { name: 'Configuración', href: '/settings', icon: Settings },
-  ];
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, perm: null },
+    { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
+    { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
+    { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
+    { name: 'Configuración', href: '/settings', icon: Settings, perm: null },
+  ].filter((item) => item.perm === null || can(item.perm));
 
   const currentPageTitle = navigation.find((item) => item.href === location.pathname)?.name ?? 'Página no encontrada';
 

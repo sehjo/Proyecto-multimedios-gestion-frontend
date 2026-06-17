@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Copy, UserCheck, UserX, UserCog, X, Loader2, CheckCircle2, Info } from 'lucide-react';
+import { Plus, Search, Copy, UserCheck, UserX, UserCog, X, Loader2, CheckCircle2, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import DataTable from '../components/DataTable';
-import { getUsers, createUser, updateUser, changeUserStatus, getRoles } from '../../api/services';
+import { getAllUsers, createUser, updateUser, changeUserStatus, getRoles } from '../../api/services';
+
+const PER_PAGE = 15;
 import { toast } from 'sonner';
 import { useActivity } from '../../context/ActivityContext';
 import { useAuth } from '../../context/AuthContext';
@@ -33,6 +35,7 @@ export default function Users() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
   // Read-only details modal (clicking the name opens this, not the editor).
@@ -82,7 +85,10 @@ export default function Users() {
     try {
       setLoading(true);
       const [usersData, rolesData] = await Promise.all([
-        getUsers().catch(() => ({ data: [] })),
+        // Fetch every page so search/pagination never "lose" users. (The backend
+        // index doesn't filter server-side yet — see the backend report; switch to
+        // getUsers({ name, page }) once it does.)
+        getAllUsers().catch(() => ({ data: [] })),
         // Roles feed the create-form selector; needs roles.read (empty if denied).
         getRoles().catch(() => ([])),
       ]);
@@ -205,18 +211,36 @@ export default function Users() {
     setEditingUser(null);
   };
 
+  // Full filtered list (search across the whole user base, not just one page).
   const filteredUsers = useMemo(() => {
-    const lower = searchTerm.toLowerCase();
+    const lower = searchTerm.trim().toLowerCase();
     return users
       // Hide the logged-in user: the backend forbids self-modification
       // (SELF_ACTION_FORBIDDEN), so we don't show the row at all.
       .filter((user: any) => user.id !== authUser?.id)
       .filter((user: any) =>
+        !lower ||
         user.name?.toLowerCase().includes(lower) ||
         user.lastname?.toLowerCase().includes(lower) ||
         user.email?.toLowerCase().includes(lower)
       );
   }, [users, searchTerm, authUser?.id]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PER_PAGE));
+
+  // Reset to page 1 whenever the search changes (avoids landing on an empty page).
+  useEffect(() => { setPage(1); }, [searchTerm]);
+
+  // Clamp the page if the filtered list shrank (e.g. after deactivating/searching).
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  // The slice shown in the table for the current page.
+  const pagedUsers = useMemo(
+    () => filteredUsers.slice((page - 1) * PER_PAGE, page * PER_PAGE),
+    [filteredUsers, page]
+  );
 
   // All role names, uppercase and comma-separated (or "—" if none).
   // roles come as an array of name strings (UserResource.getRoleNames()).
@@ -343,7 +367,7 @@ export default function Users() {
       ) : (
         <DataTable
           columns={columns}
-          data={filteredUsers}
+          data={pagedUsers}
           onEdit={canUpdate ? handleEdit : undefined}
           customActions={[
             {
@@ -368,6 +392,33 @@ export default function Users() {
             }] : []),
           ]}
         />
+      )}
+
+      {/* ── Pagination (hidden when a single page) ─────────────────────────── */}
+      {canView && !loading && totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-sm text-gray-500">
+            Página {page} de {totalPages} · {filteredUsers.length} usuario{filteredUsers.length === 1 ? '' : 's'}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Anterior
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ── Details modal (read-only) ───────────────────────────────────────── */}

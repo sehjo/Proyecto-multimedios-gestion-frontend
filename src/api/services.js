@@ -98,10 +98,31 @@ export const deleteUserType = async (id) => {
   await api.delete(`/user-types/${id}`);
 };
 
-// Users
-export const getUsers = async (page = 1) => {
-  const response = await api.get('/users', { params: { page } });
+// Users — accepts a filters object (server-side once the backend applies them).
+// Builds `params` only with the keys present, so getUsers() with no args still works.
+// Backend response: { data: [...], links, meta: { current_page, last_page, per_page, total } }.
+export const getUsers = async ({ page = 1, perPage, name, role, status } = {}) => {
+  const params = { page };
+  if (perPage) params.per_page = perPage;
+  if (name)    params.name     = name;
+  if (role)    params.role     = role;
+  if (status)  params.status   = status;
+  const response = await api.get('/users', { params });
   return response.data;
+};
+
+// Fetch ALL users by walking every page (used where the full list is needed,
+// e.g. the role-assignment modal). Fallback while the backend index doesn't
+// filter server-side; safe for the small internal user base.
+export const getAllUsers = async (filters = {}) => {
+  const first = await getUsers({ ...filters, page: 1 });
+  const lastPage = first?.meta?.last_page ?? 1;
+  let data = first?.data ?? [];
+  for (let page = 2; page <= lastPage; page++) {
+    const res = await getUsers({ ...filters, page });
+    data = data.concat(res?.data ?? []);
+  }
+  return { ...first, data };
 };
 
 export const getUser = async (id) => {

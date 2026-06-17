@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Search, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { getUsers, getUser } from '../../api/usersService';
+import { getAllUsers, getUser } from '../../api/usersService';
 import { getRoles, syncUserRoles } from '../../api/services';
 import { useAuth } from '../../context/AuthContext';
 
@@ -50,7 +50,7 @@ export default function AssignRolesModal({ onClose, onAssigned }: AssignRolesMod
 
   useEffect(() => {
     Promise.all([
-      getUsers({ perPage: 50 }).then((res) => setUsers(res.data ?? [])),
+      getAllUsers().then((res) => setUsers(res.data ?? [])),
       getRoles().then((res) => setRoles(Array.isArray(res) ? res : res.data ?? [])),
     ])
       .catch(() => toast.error('Error al cargar los datos.'))

@@ -1,16 +1,15 @@
 import { createBrowserRouter } from 'react-router';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-import ResetPassword from './pages/ResetPassword';
 
 export const router = createBrowserRouter([
   {
     path: '/login',
-    lazy: () => import('./pages/Login').then(m => ({ Component: m.default })),
+    lazy: () => import('./modules/auth/pages/LoginPage').then(m => ({ Component: m.default })),
   },
   {
     path: '/reset-password',
-    Component: ResetPassword,
+    lazy: () => import('./modules/auth/pages/ResetPasswordPage').then(m => ({ Component: m.default })),
   },
   {
     path: '/',

@@ -4,12 +4,14 @@ import {
   LayoutDashboard,
   Users,
   UserCircle,
-  ShieldCheck,
+  CalendarDays,
   ClipboardList,
   Settings,
   LogOut,
   Menu,
   X,
+  History,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -24,12 +26,19 @@ export default function Layout() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, perm: null },
     { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
+    { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: 'appointments.read' },
+    { name: 'Historial Médico', href: '/medical-history', icon: History, perm: 'medical_history.read' },
     { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
     { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
     { name: 'Configuración', href: '/settings', icon: Settings, perm: null },
   ].filter((item) => item.perm === null || can(item.perm));
 
-  const currentPageTitle = navigation.find((item) => item.href === location.pathname)?.name ?? 'Página no encontrada';
+  const isNavActive = (href: string) =>
+    href === '/'
+      ? location.pathname === '/'
+      : location.pathname === href || location.pathname.startsWith(href + '/');
+
+  const currentPageTitle = navigation.find((item) => isNavActive(item.href))?.name ?? 'Página no encontrada';
 
   useEffect(() => {
     document.title = `${currentPageTitle} | CCSS Consultorio`;
@@ -93,7 +102,7 @@ export default function Layout() {
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
+            const isActive = isNavActive(item.href);
             return (
               <Link
                 key={item.name}

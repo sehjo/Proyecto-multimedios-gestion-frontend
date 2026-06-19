@@ -15,7 +15,7 @@ export default function Patients() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<any>(null);
-  const [editingPatient, setEditingPatient] = useState(null);
+  const [editingPatient, setEditingPatient] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [formData, setFormData] = useState({

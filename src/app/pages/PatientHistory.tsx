@@ -8,7 +8,6 @@ import {
   Activity,
   FileText,
   Calendar,
-  ShieldOff,
   Plus,
   X,
   Pencil,
@@ -338,7 +337,12 @@ export default function PatientHistory() {
   }, [entries, dateFrom, dateTo, doctorSearch, diagnosisSearch]);
 
   const toggleExpanded = (entryId: number) =>
-    setExpandedIds((prev) => { const next = new Set(prev); next.has(entryId) ? next.delete(entryId) : next.add(entryId); return next; });
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(entryId)) next.delete(entryId);
+      else next.add(entryId);
+      return next;
+    });
 
   const allExpanded = filteredEntries.length > 0 && filteredEntries.every((e) => expandedIds.has(e.id));
   const toggleAll = () =>

@@ -26,8 +26,10 @@ export default function Layout() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, perm: null },
     { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
-    { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: 'appointments.read' },
-    { name: 'Historial Médico', href: '/medical-history', icon: History, perm: 'medical_history.read' },
+    // Appointments and Medical History still use mock data (no backend permission
+    // defined yet): visible to everyone until the module is wired to the API.
+    { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: null },
+    { name: 'Historial Médico', href: '/medical-history', icon: History, perm: null },
     { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
     { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
     { name: 'Configuración', href: '/settings', icon: Settings, perm: null },

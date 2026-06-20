@@ -1,22 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { toast } from 'sonner';
-import { loginUser, logoutUser } from '../api/services';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  user_type?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
-}
+import { loginUser, logoutUser } from '../services/authService';
+import type { User, AuthContextType } from '../types/auth.types';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -58,8 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(receivedUser);
       toast.success(`Bienvenido, ${receivedUser?.name || 'Usuario'}!`);
       return true;
-    } catch {
-      toast.error('Credenciales inválidas. Intente de nuevo.');
+    } catch (error: any) {
+      // 403 INACTIVE_ACCOUNT → backend message; 422 → field errors; else generic.
+      const res = error?.response?.data;
+      const message =
+        res?.message ||
+        res?.errors?.email?.[0] ||
+        'Credenciales inválidas. Intente de nuevo.';
+      toast.error(message);
       return false;
     }
   };
@@ -78,20 +69,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isAuthenticated: !!token,
-        isLoading,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // UX gate only — never a security boundary. The backend enforces permissions
+  // on every endpoint, so this just hides controls the user can't use.
+  const can = useCallback(
+    (permission: string): boolean => user?.permissions?.includes(permission) ?? false,
+    [user]
   );
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isAuthenticated: !!token,
+      isLoading,
+      login,
+      logout,
+      can,
+    }),
+    [user, token, isLoading, can]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

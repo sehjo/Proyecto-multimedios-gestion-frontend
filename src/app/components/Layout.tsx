@@ -16,7 +16,7 @@ import {
   BarChart2,
   History,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../modules/auth';
 
 export default function Layout() {
   const location = useLocation();

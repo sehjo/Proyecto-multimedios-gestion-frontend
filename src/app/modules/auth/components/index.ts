@@ -1,3 +1,4 @@
+export { default as AuthLayout } from './AuthLayout';
 export { default as AuthBranding } from './AuthBranding';
 export { default as AuthField } from './AuthField';
 export { default as PasswordField } from './PasswordField';

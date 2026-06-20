@@ -62,11 +62,11 @@ export default function RolesTable({
               </tr>
             ) : (
               roles.map((role) => {
-                // No action is allowed on your own role: you may only view it
-                // (editing/deleting your own role would lock yourself out → 403).
-                // Edit also requires update permission and is blocked on... nothing
-                // else (protected roles can still have permissions edited).
-                // Delete also requires delete permission and a non-system role.
+                // Your own role is view-only: neither edit nor delete shows (acting
+                // on it would lock yourself out → 403). It also gets a "Tu rol" badge.
+                // Edit needs update permission; delete needs delete permission and a
+                // non-system role (protected roles can still have permissions edited
+                // when they're not yours).
                 const own = isOwnRole(role);
                 const showEdit = canUpdate && !own;
                 const showDelete = canDelete && !own && !isProtectedRole(role.name);
@@ -85,6 +85,11 @@ export default function RolesTable({
                       {isProtectedRole(role.name) && (
                         <span className="role-system-badge ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
                           sistema
+                        </span>
+                      )}
+                      {own && (
+                        <span className="role-own-badge ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          Tu rol
                         </span>
                       )}
                     </td>

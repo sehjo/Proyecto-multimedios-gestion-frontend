@@ -11,7 +11,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Restore session from sessionStorage on mount
     const savedToken = sessionStorage.getItem('auth_token');
     const savedUser = sessionStorage.getItem('auth_user');
     if (savedToken && savedUser) {
@@ -44,7 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.success(`Bienvenido, ${receivedUser?.name || 'Usuario'}!`);
       return true;
     } catch (error: any) {
-      // 403 INACTIVE_ACCOUNT → backend message; 422 → field errors; else generic.
       const res = error?.response?.data;
       const message =
         res?.message ||
@@ -69,8 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // UX gate only — never a security boundary. The backend enforces permissions
-  // on every endpoint, so this just hides controls the user can't use.
   const can = useCallback(
     (permission: string): boolean => user?.permissions?.includes(permission) ?? false,
     [user]

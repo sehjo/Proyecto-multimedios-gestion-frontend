@@ -8,13 +8,14 @@ export interface User {
   status: 'ACTIVE' | 'INACTIVE';
 }
 
-// Shape of the create/edit form. `role` is only used on create.
+// Shape of the create/edit form. `user_type_id` is only used on create (the role
+// is chosen as its id; the backend POST /users expects user_type_id, not a name).
 export interface UserFormData {
   name: string;
   lastname: string;
   email: string;
   password: string;
-  role: string;
+  user_type_id: string;
 }
 
 // A role option for the create-form selector (GET /roles → RoleResource[]).

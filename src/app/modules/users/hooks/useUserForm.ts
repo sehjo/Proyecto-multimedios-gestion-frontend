@@ -16,7 +16,7 @@ const EMPTY_FORM: UserFormData = {
   lastname: '',
   email: '',
   password: '',
-  role: '',
+  user_type_id: '',
 };
 
 // Owns the create/edit form: state, edit seeding and submit (create vs update).
@@ -49,7 +49,9 @@ export function useUserForm(onSaved: (msg: string) => void) {
       lastname: user.lastname,
       email: user.email,
       password: '',
-      role: user.roles?.[0] ?? '',
+      // Role isn't edited here (PUT /users/{id} ignores it; roles live in the
+      // Roles tab), so the selector isn't shown on edit and this stays empty.
+      user_type_id: '',
     });
     setShowModal(true);
   };
@@ -76,12 +78,12 @@ export function useUserForm(onSaved: (msg: string) => void) {
         logActivity({ type: 'Usuario actualizado', name: `${formData.name} ${formData.lastname}` });
         onSaved('Usuario actualizado exitosamente.');
       } else {
-        // POST /users requires the role.
+        // POST /users requires the role as user_type_id (an integer FK), not a name.
         const payload = {
           name: formData.name,
           lastname: formData.lastname,
           email: formData.email,
-          role: formData.role,
+          user_type_id: Number(formData.user_type_id),
           ...(formData.password && { password: formData.password }),
         };
         await createUser(payload);

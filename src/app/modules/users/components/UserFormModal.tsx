@@ -104,13 +104,13 @@ export default function UserFormModal({
               <div className="relative">
                 <select
                   required
-                  value={formData.role}
-                  onChange={(e) => onFieldChange('role', e.target.value)}
+                  value={formData.user_type_id}
+                  onChange={(e) => onFieldChange('user_type_id', e.target.value)}
                   className="w-full appearance-none px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="">Seleccionar...</option>
                   {roles.map((role) => (
-                    <option key={role.id} value={role.name}>
+                    <option key={role.id} value={role.id}>
                       {role.name}
                     </option>
                   ))}

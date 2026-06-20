@@ -50,14 +50,28 @@ export const getAllUsers = async (filters: UsersQuery = {}): Promise<PaginatedUs
   return { ...first, data };
 };
 
-// POST /users requires the role; backend may generate a temp password.
-export const createUser = async (payload: Partial<UserFormData>) => {
+// Payload for POST /users. The role is sent as user_type_id (integer FK to
+// users_types), which is what the backend validates (required|integer|exists).
+export interface CreateUserPayload {
+  name: string;
+  lastname: string;
+  email: string;
+  user_type_id: number;
+  password?: string;
+}
+
+// POST /users requires the role (user_type_id); backend may generate a temp password.
+export const createUser = async (payload: CreateUserPayload) => {
   const response = await api.post('/users', payload);
   return response.data;
 };
 
-// PUT /users/{id} updates profile fields only — roles are managed from the Roles tab.
-export const updateUser = async (id: number, payload: Partial<UserFormData>) => {
+// PUT /users/{id} updates profile fields only — roles are managed from the Roles
+// tab, so the role/user_type_id is intentionally omitted here.
+export const updateUser = async (
+  id: number,
+  payload: Partial<Pick<UserFormData, 'name' | 'lastname' | 'email' | 'password'>>
+) => {
   const response = await api.put(`/users/${id}`, payload);
   return response.data;
 };

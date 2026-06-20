@@ -22,7 +22,7 @@ export const router = createBrowserRouter([
           { path: 'patients', lazy: () => import('./pages/Patients').then(m => ({ Component: m.default })) },
           { path: 'appointments', lazy: () => import('./pages/Appointments').then(m => ({ Component: m.default })) },
           { path: 'users', lazy: () => import('./modules/users/pages/UsersPage').then(m => ({ Component: m.default })) },
-          { path: 'roles', lazy: () => import('./pages/Roles').then(m => ({ Component: m.default })) },
+          { path: 'roles', lazy: () => import('./modules/roles/pages/RolesPage').then(m => ({ Component: m.default })) },
           { path: 'settings', lazy: () => import('./pages/Settings').then(m => ({ Component: m.default })) },
           { path: 'medical-history', lazy: () => import('./pages/MedicalHistory').then(m => ({ Component: m.default })) },
           { path: 'medical-history/:patientId', lazy: () => import('./pages/PatientHistory').then(m => ({ Component: m.default })) },

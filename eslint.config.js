@@ -31,6 +31,7 @@ export default tseslint.config(
             // No cross-feature imports (each module only imports its own files).
             { target: './src/app/modules/auth', from: './src/app/modules', except: ['./auth'] },
             { target: './src/app/modules/users', from: './src/app/modules', except: ['./users'] },
+            { target: './src/app/modules/roles', from: './src/app/modules', except: ['./roles'] },
             // The app shell (routes/App) is the top layer: modules can't import it.
             { target: './src/app/modules', from: './src/app/App.tsx' },
             { target: './src/app/modules', from: './src/app/routes.ts' },

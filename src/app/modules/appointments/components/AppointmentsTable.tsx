@@ -2,7 +2,7 @@ import { CheckCircle, RefreshCw, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import DataTable, { CustomAction } from '../../../components/DataTable';
 import AppointmentStatusBadge from './AppointmentStatusBadge';
-import { formatDate } from '../constants';
+import { formatDate, getAttendBlock, getCancelBlock, getRescheduleBlock } from '../constants';
 import type { AppointmentStatus, EnrichedAppointment } from '../types/appointments.types';
 
 interface AppointmentsTableProps {
@@ -40,16 +40,9 @@ export default function AppointmentsTable({
       icon: <CheckCircle className="w-4 h-4" />,
       label: 'Marcar como atendida',
       onClick: (row: EnrichedAppointment) => {
-        if (row.status === 'attended') {
-          toast.info('Esta cita ya fue marcada como atendida.');
-          return;
-        }
-        if (row.status === 'cancelled') {
-          toast.error('No se puede atender una cita cancelada.');
-          return;
-        }
-        if (row.status === 'rescheduled') {
-          toast.error('Esta cita fue reprogramada. Atienda la nueva cita.');
+        const block = getAttendBlock(row.status);
+        if (block) {
+          toast[block.kind](block.message);
           return;
         }
         onAttend(row);
@@ -60,16 +53,9 @@ export default function AppointmentsTable({
       icon: <RefreshCw className="w-4 h-4" />,
       label: 'Reprogramar cita',
       onClick: (row: EnrichedAppointment) => {
-        if (row.status === 'attended') {
-          toast.error('La cita ya fue atendida y no puede modificarse.');
-          return;
-        }
-        if (row.status === 'cancelled') {
-          toast.error('No se puede reprogramar una cita cancelada.');
-          return;
-        }
-        if (row.status === 'rescheduled') {
-          toast.info('Esta cita ya fue reprogramada.');
+        const block = getRescheduleBlock(row.status);
+        if (block) {
+          toast[block.kind](block.message);
           return;
         }
         onReschedule(row);
@@ -80,16 +66,9 @@ export default function AppointmentsTable({
       icon: <XCircle className="w-4 h-4" />,
       label: 'Cancelar cita',
       onClick: (row: EnrichedAppointment) => {
-        if (row.status === 'attended') {
-          toast.error('La cita ya fue atendida y no puede modificarse.');
-          return;
-        }
-        if (row.status === 'cancelled') {
-          toast.info('Esta cita ya está cancelada.');
-          return;
-        }
-        if (row.status === 'rescheduled') {
-          toast.info('Esta cita ya fue reprogramada.');
+        const block = getCancelBlock(row.status);
+        if (block) {
+          toast[block.kind](block.message);
           return;
         }
         onCancel(row);

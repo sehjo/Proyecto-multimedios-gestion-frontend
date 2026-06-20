@@ -29,3 +29,49 @@ export function formatDate(dateStr: string) {
   const [year, month, day] = dateStr.split('-');
   return `${day}/${month}/${year}`;
 }
+
+export interface StatusBlock {
+  kind: 'info' | 'error';
+  message: string;
+}
+
+// Which status transitions are blocked for each table action, and the
+// feedback to show instead of performing it. pending/confirmed allow all three.
+export function getAttendBlock(status: AppointmentStatus): StatusBlock | null {
+  switch (status) {
+    case 'attended':
+      return { kind: 'info', message: 'Esta cita ya fue marcada como atendida.' };
+    case 'cancelled':
+      return { kind: 'error', message: 'No se puede atender una cita cancelada.' };
+    case 'rescheduled':
+      return { kind: 'error', message: 'Esta cita fue reprogramada. Atienda la nueva cita.' };
+    default:
+      return null;
+  }
+}
+
+export function getRescheduleBlock(status: AppointmentStatus): StatusBlock | null {
+  switch (status) {
+    case 'attended':
+      return { kind: 'error', message: 'La cita ya fue atendida y no puede modificarse.' };
+    case 'cancelled':
+      return { kind: 'error', message: 'No se puede reprogramar una cita cancelada.' };
+    case 'rescheduled':
+      return { kind: 'info', message: 'Esta cita ya fue reprogramada.' };
+    default:
+      return null;
+  }
+}
+
+export function getCancelBlock(status: AppointmentStatus): StatusBlock | null {
+  switch (status) {
+    case 'attended':
+      return { kind: 'error', message: 'La cita ya fue atendida y no puede modificarse.' };
+    case 'cancelled':
+      return { kind: 'info', message: 'Esta cita ya está cancelada.' };
+    case 'rescheduled':
+      return { kind: 'info', message: 'Esta cita ya fue reprogramada.' };
+    default:
+      return null;
+  }
+}

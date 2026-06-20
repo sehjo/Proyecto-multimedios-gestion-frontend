@@ -62,11 +62,14 @@ export default function RolesTable({
               </tr>
             ) : (
               roles.map((role) => {
-                // Edit: needs update permission AND not your own role (PUT on your
-                // own role → 403). Protected roles can still have permissions edited.
-                // Delete: needs delete permission AND not a base (system) role.
-                const showEdit = canUpdate && !isOwnRole(role);
-                const showDelete = canDelete && !isProtectedRole(role.name);
+                // No action is allowed on your own role: you may only view it
+                // (editing/deleting your own role would lock yourself out → 403).
+                // Edit also requires update permission and is blocked on... nothing
+                // else (protected roles can still have permissions edited).
+                // Delete also requires delete permission and a non-system role.
+                const own = isOwnRole(role);
+                const showEdit = canUpdate && !own;
+                const showDelete = canDelete && !own && !isProtectedRole(role.name);
                 return (
                   <tr key={role.id} className="hover:bg-gray-50 transition-colors">
                     <td data-label="ID" className="px-5 py-4 text-sm text-gray-500">

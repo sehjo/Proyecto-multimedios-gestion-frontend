@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/app/modules/auth';
 import { useActivity } from '../../../../context/ActivityContext';
 import { getAllUsers, getRoles, changeUserStatus } from '../services/usersService';
-import type { UserRow, Role, Banner } from '../types/users.types';
+import type { User, Role, Banner } from '../types/users.types';
 
 const PER_PAGE = 15;
 
@@ -16,7 +16,7 @@ export function useUsers() {
   // Permission gate (UX only; the backend enforces each endpoint).
   const canView = can('users.read');
 
-  const [users, setUsers] = useState<UserRow[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,7 +41,7 @@ export function useUsers() {
     try {
       setLoading(true);
       const [usersData, rolesData] = await Promise.all([
-        getAllUsers().catch(() => ({ data: [] as UserRow[] })),
+        getAllUsers().catch(() => ({ data: [] as User[] })),
         getRoles().catch(() => [] as Role[]),
       ]);
       setUsers(usersData.data || []);
@@ -91,7 +91,7 @@ export function useUsers() {
   // Toggle ACTIVE/INACTIVE. Owns its own loading flag (confirming) and returns
   // true on success so the caller can close the confirmation modal.
   const changeStatus = useCallback(
-    async (user: UserRow): Promise<boolean> => {
+    async (user: User): Promise<boolean> => {
       if (confirming) return false; // ignore rapid double clicks
       const isActive = user.status === 'ACTIVE';
       const newStatus = isActive ? 'INACTIVE' : 'ACTIVE';

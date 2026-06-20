@@ -1,5 +1,5 @@
 // A user row as returned by the backend UserResource (roles come as name strings).
-export interface UserRow {
+export interface User {
   id: number;
   name: string;
   lastname: string;

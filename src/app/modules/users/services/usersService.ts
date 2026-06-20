@@ -1,5 +1,5 @@
 import api from '@/api/client';
-import type { UserRow, UserFormData, Role } from '../types/users.types';
+import type { User, UserFormData, Role } from '../types/users.types';
 
 interface UsersQuery {
   page?: number;
@@ -11,7 +11,7 @@ interface UsersQuery {
 }
 
 interface PaginatedUsers {
-  data: UserRow[];
+  data: User[];
   meta?: { last_page?: number };
 }
 
@@ -32,7 +32,7 @@ export const getUsers = async ({
   return response.data;
 };
 
-export const getUser = async (id: number): Promise<UserRow> => {
+export const getUser = async (id: number): Promise<User> => {
   const response = await api.get(`/users/${id}`);
   return response.data;
 };

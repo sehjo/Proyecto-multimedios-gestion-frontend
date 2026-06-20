@@ -16,7 +16,7 @@ import {
   UserFormModal,
   ConfirmStatusModal,
 } from '../components';
-import type { UserRow } from '../types/users.types';
+import type { User } from '../types/users.types';
 
 export default function UsersPage() {
   const { can } = useAuth();
@@ -52,8 +52,8 @@ export default function UsersPage() {
   useOpenCreateFromQuery(form.openCreate);
 
   // Which user each modal is acting on (view = read-only, confirm = status).
-  const [viewUser, setViewUser] = useState<UserRow | null>(null);
-  const [confirmUser, setConfirmUser] = useState<UserRow | null>(null);
+  const [viewUser, setViewUser] = useState<User | null>(null);
+  const [confirmUser, setConfirmUser] = useState<User | null>(null);
 
   const handleConfirmStatus = async () => {
     if (!confirmUser) return;
@@ -61,7 +61,7 @@ export default function UsersPage() {
     if (ok) setConfirmUser(null);
   };
 
-  const openEditFromView = (user: UserRow) => {
+  const openEditFromView = (user: User) => {
     setViewUser(null);
     form.openEdit(user);
   };

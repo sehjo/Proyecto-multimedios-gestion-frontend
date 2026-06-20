@@ -1,14 +1,14 @@
 import { Copy, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import DataTable, { CustomAction } from '../../../components/DataTable';
-import type { UserRow } from '../types/users.types';
+import type { User } from '../types/users.types';
 
 interface UsersTableProps {
-  users: UserRow[];
+  users: User[];
   canUpdate: boolean;
-  onView: (user: UserRow) => void;
-  onEdit: (user: UserRow) => void;
-  onChangeStatus: (user: UserRow) => void;
+  onView: (user: User) => void;
+  onEdit: (user: User) => void;
+  onChangeStatus: (user: User) => void;
 }
 
 // All role names, uppercase and comma-separated (or "—" if none).

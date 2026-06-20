@@ -1,10 +1,10 @@
 import { FormEvent } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { UserRow, UserFormData, Role } from '../types/users.types';
+import type { User, UserFormData, Role } from '../types/users.types';
 import { NAME_MAX, EMAIL_MAX, PASSWORD_MAX, PASSWORD_MIN } from '../hooks/useUserForm';
 
 interface UserFormModalProps {
-  editingUser: UserRow | null;
+  editingUser: User | null;
   formData: UserFormData;
   roles: Role[];
   submitting: boolean;

@@ -1,8 +1,8 @@
 import { Loader2 } from 'lucide-react';
-import type { UserRow } from '../types/users.types';
+import type { User } from '../types/users.types';
 
 interface ConfirmStatusModalProps {
-  user: UserRow;
+  user: User;
   confirming: boolean;
   onCancel: () => void;
   onConfirm: () => void;

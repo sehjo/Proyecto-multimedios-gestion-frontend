@@ -2,7 +2,7 @@ import { useState, FormEvent } from 'react';
 import { toast } from 'sonner';
 import { useActivity } from '../../../../context/ActivityContext';
 import { createUser, updateUser } from '../services/usersService';
-import type { UserRow, UserFormData } from '../types/users.types';
+import type { User, UserFormData } from '../types/users.types';
 
 // Max lengths from the backend FormRequest (UserRequest). One constant feeds the
 // counter, the input maxLength and the validation — never hardcode in 3 places.
@@ -25,7 +25,7 @@ export function useUserForm(onSaved: (msg: string) => void) {
   const { logActivity } = useActivity();
 
   const [showModal, setShowModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserRow | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState<UserFormData>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,7 +42,7 @@ export function useUserForm(onSaved: (msg: string) => void) {
     setShowModal(true);
   };
 
-  const openEdit = (user: UserRow) => {
+  const openEdit = (user: User) => {
     setEditingUser(user);
     setFormData({
       name: user.name,

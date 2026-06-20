@@ -10,6 +10,14 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // Pin the dev port so Vite never silently jumps to 5174 when 5173 is taken.
+  // The backend CORS only allows http://localhost:5173; a different origin gets
+  // blocked and login "fails". strictPort makes a busy port fail loudly instead.
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
+
   resolve: {
     alias: {
       // Alias @ to the src directory

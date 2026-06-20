@@ -8,7 +8,8 @@ interface Column {
 }
 
 export interface CustomAction {
-  icon: React.ReactNode;
+  // Static node, or a per-row function (e.g. to switch icon by row.status).
+  icon: React.ReactNode | ((row: any) => React.ReactNode);
   label: string;
   onClick: (row: any) => void;
   className?: string; // e.g. text-green-600 hover:bg-green-50
@@ -70,17 +71,23 @@ function DataTable({ columns, data, onEdit, onDelete, customActions }: DataTable
                   {hasActions && (
                     <td data-label="Acciones" className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {customActions?.map((action, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); action.onClick(row); }}
-                            className={`p-2 rounded-lg transition-colors ${action.className || 'text-gray-600 hover:bg-gray-100'}`}
-                            title={action.label}
-                          >
-                            {action.icon}
-                          </button>
-                        ))}
+                        {customActions?.map((action, i) => {
+                          // A per-row icon may return null to hide the action for
+                          // that row (e.g. status change gated by direction/permission).
+                          const icon = typeof action.icon === 'function' ? action.icon(row) : action.icon;
+                          if (icon == null) return null;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); action.onClick(row); }}
+                              className={`p-2 rounded-lg transition-colors ${action.className || 'text-gray-600 hover:bg-gray-100'}`}
+                              title={action.label}
+                            >
+                              {icon}
+                            </button>
+                          );
+                        })}
                         {onEdit && (
                           <button
                             type="button"

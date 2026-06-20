@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+﻿import { createBrowserRouter } from 'react-router';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -21,15 +21,18 @@ export const router = createBrowserRouter([
           { index: true, lazy: () => import('./pages/Dashboard').then(m => ({ Component: m.default })) },
           { path: 'patients', lazy: () => import('./pages/Patients').then(m => ({ Component: m.default })) },
           { path: 'appointments', lazy: () => import('./pages/Appointments').then(m => ({ Component: m.default })) },
-          { path: 'users', lazy: () => import('./pages/Users').then(m => ({ Component: m.default })) },
+          { path: 'users', lazy: () => import('./modules/users/pages/UsersPage').then(m => ({ Component: m.default })) },
+          { path: 'roles', lazy: () => import('./modules/roles/pages/RolesPage').then(m => ({ Component: m.default })) },
           { path: 'agenda', lazy: () => import('./pages/Agenda').then(m => ({ Component: m.default })) },
           { path: 'horario-config', lazy: () => import('./pages/HorarioConfig').then(m => ({ Component: m.default })) },
           { path: 'bloqueo-agenda', lazy: () => import('./pages/BloqueoAgenda').then(m => ({ Component: m.default })) },
           { path: 'resumen-diario', lazy: () => import('./pages/ResumenDiario').then(m => ({ Component: m.default })) },
           { path: 'settings', lazy: () => import('./pages/Settings').then(m => ({ Component: m.default })) },
           { path: 'reports/appointments', lazy: () => import('./modules/appointmentsReport/pages/AppointmentsReportPage').then(m => ({ Component: m.default })) },
+          { path: 'notifications', lazy: () => import('./modules/notifications/pages/NotificationSettingsPage').then(m => ({ Component: m.default })) },
           { path: 'medical-history', lazy: () => import('./pages/MedicalHistory').then(m => ({ Component: m.default })) },
           { path: 'medical-history/:patientId', lazy: () => import('./pages/PatientHistory').then(m => ({ Component: m.default })) },
+          { path: 'audit', lazy: () => import('./modules/activityHistory/pages/ActivityHistoryPage').then(m => ({ Component: m.default })) },
           { path: '*', lazy: () => import('./pages/NotFound').then(m => ({ Component: m.default })) },
         ],
       },

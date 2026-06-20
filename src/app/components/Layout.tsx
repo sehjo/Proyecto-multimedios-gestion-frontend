@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
@@ -6,6 +6,9 @@ import {
   UserCircle,
   CalendarDays,
   ClipboardList,
+  CalendarClock,
+  CalendarX,
+  Stethoscope,
   Settings,
   Bell,
   LogOut,
@@ -13,7 +16,7 @@ import {
   X,
   History,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../modules/auth';
 
 export default function Layout() {
   const location = useLocation();
@@ -25,9 +28,13 @@ export default function Layout() {
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Pacientes', href: '/patients', icon: UserCircle },
     { name: 'Citas', href: '/appointments', icon: CalendarDays },
-    { name: 'Historial Médico', href: '/medical-history', icon: History },
+    { name: 'Historial MÃ©dico', href: '/medical-history', icon: History },
     { name: 'Usuarios', href: '/users', icon: Users },
-    { name: 'Configuración', href: '/settings', icon: Settings },
+    { name: 'Agenda', href: '/agenda', icon: CalendarDays },
+    { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock },
+    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX },
+    { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope },
+    { name: 'ConfiguraciÃ³n', href: '/settings', icon: Settings },
     { name: 'Notificaciones', href: '/notifications', icon: Bell },
   ];
 
@@ -36,7 +43,7 @@ export default function Layout() {
       ? location.pathname === '/'
       : location.pathname === href || location.pathname.startsWith(href + '/');
 
-  const currentPageTitle = navigation.find((item) => isNavActive(item.href))?.name ?? 'Página no encontrada';
+  const currentPageTitle = navigation.find((item) => isNavActive(item.href))?.name ?? 'PÃ¡gina no encontrada';
 
   useEffect(() => {
     document.title = `${currentPageTitle} | CCSS Consultorio`;
@@ -65,7 +72,7 @@ export default function Layout() {
     <div className="app-layout flex h-screen bg-gray-50">
       <button
         type="button"
-        aria-label="Cerrar menú de navegación"
+        aria-label="Cerrar menÃº de navegaciÃ³n"
         onClick={() => setIsSidebarOpen(false)}
         className={`app-sidebar-backdrop fixed inset-0 z-30 bg-black/40 transition-opacity duration-300 lg:hidden ${
           isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -89,7 +96,7 @@ export default function Layout() {
             </div>
             <button
               type="button"
-              aria-label="Cerrar menú"
+              aria-label="Cerrar menÃº"
               onClick={() => setIsSidebarOpen(false)}
               className="rounded-md p-1 text-gray-500 hover:bg-gray-100 lg:hidden"
             >
@@ -130,7 +137,7 @@ export default function Layout() {
             </div>
             <button
               onClick={handleLogout}
-              title="Cerrar sesión"
+              title="Cerrar sesiÃ³n"
               className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded"
             >
               <LogOut className="w-4 h-4" />
@@ -144,7 +151,7 @@ export default function Layout() {
         <header className="app-mobile-header flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
           <button
             type="button"
-            aria-label="Abrir menú de navegación"
+            aria-label="Abrir menÃº de navegaciÃ³n"
             onClick={() => setIsSidebarOpen(true)}
             className="rounded-md p-1 text-gray-600 hover:bg-gray-100"
           >

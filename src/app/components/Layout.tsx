@@ -6,6 +6,9 @@ import {
   UserCircle,
   CalendarDays,
   ClipboardList,
+  CalendarClock,
+  CalendarX,
+  Stethoscope,
   Settings,
   LogOut,
   Menu,
@@ -26,12 +29,16 @@ export default function Layout() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, perm: null },
     { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
-    // Appointments and Medical History still use mock data (no backend permission
-    // defined yet): visible to everyone until the module is wired to the API.
+    // Appointments, Medical History and the agenda module still use mock data (no
+    // backend permission defined yet): visible to everyone until wired to the API.
     { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: null },
     { name: 'Historial Médico', href: '/medical-history', icon: History, perm: null },
     { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
     { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
+    { name: 'Agenda', href: '/agenda', icon: CalendarDays, perm: null },
+    { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock, perm: null },
+    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX, perm: null },
+    { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope, perm: null },
     { name: 'Configuración', href: '/settings', icon: Settings, perm: null },
   ].filter((item) => item.perm === null || can(item.perm));
 

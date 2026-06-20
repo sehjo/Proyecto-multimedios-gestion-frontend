@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
@@ -10,6 +10,7 @@ import {
   CalendarX,
   Stethoscope,
   Settings,
+  Bell,
   LogOut,
   Menu,
   X,
@@ -35,6 +36,7 @@ export default function Layout() {
     { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
     { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
     { name: 'Auditoría', href: '/audit', icon: ScrollText, perm: null },
+    { name: 'Notificaciones', href: '/notifications', icon: Bell, perm: null },
     { name: 'Agenda', href: '/agenda', icon: CalendarDays, perm: null },
     { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock, perm: null },
     { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX, perm: null },

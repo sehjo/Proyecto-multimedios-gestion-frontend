@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+﻿import { createBrowserRouter } from 'react-router';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -28,6 +28,7 @@ export const router = createBrowserRouter([
           { path: 'bloqueo-agenda', lazy: () => import('./pages/BloqueoAgenda').then(m => ({ Component: m.default })) },
           { path: 'resumen-diario', lazy: () => import('./pages/ResumenDiario').then(m => ({ Component: m.default })) },
           { path: 'settings', lazy: () => import('./pages/Settings').then(m => ({ Component: m.default })) },
+          { path: 'notifications', lazy: () => import('./modules/notifications/pages/NotificationSettingsPage').then(m => ({ Component: m.default })) },
           { path: 'medical-history', lazy: () => import('./pages/MedicalHistory').then(m => ({ Component: m.default })) },
           { path: 'medical-history/:patientId', lazy: () => import('./pages/PatientHistory').then(m => ({ Component: m.default })) },
           { path: 'audit', lazy: () => import('./modules/activityHistory/pages/ActivityHistoryPage').then(m => ({ Component: m.default })) },

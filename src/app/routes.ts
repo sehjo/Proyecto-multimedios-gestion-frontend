@@ -20,7 +20,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, lazy: () => import('./pages/Dashboard').then(m => ({ Component: m.default })) },
           { path: 'patients', lazy: () => import('./pages/Patients').then(m => ({ Component: m.default })) },
-          { path: 'appointments', lazy: () => import('./pages/Appointments').then(m => ({ Component: m.default })) },
+          { path: 'appointments', lazy: () => import('./modules/appointments/pages/AppointmentsPage').then(m => ({ Component: m.default })) },
           { path: 'users', lazy: () => import('./modules/users/pages/UsersPage').then(m => ({ Component: m.default })) },
           { path: 'roles', lazy: () => import('./modules/roles/pages/RolesPage').then(m => ({ Component: m.default })) },
           { path: 'agenda', lazy: () => import('./pages/Agenda').then(m => ({ Component: m.default })) },

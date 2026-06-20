@@ -6,6 +6,7 @@ import type { User } from '../types/users.types';
 interface UsersTableProps {
   users: User[];
   canUpdate: boolean;
+  canDelete: boolean;
   onView: (user: User) => void;
   onEdit: (user: User) => void;
   onChangeStatus: (user: User) => void;
@@ -20,6 +21,7 @@ const roleLabel = (roles?: string[]): string =>
 export default function UsersTable({
   users,
   canUpdate,
+  canDelete,
   onView,
   onEdit,
   onChangeStatus,
@@ -71,18 +73,29 @@ export default function UsersTable({
       },
       className: 'text-gray-400 hover:text-gray-600 hover:bg-gray-100',
     },
-    // Activate/deactivate only if the user can update (users.update).
-    ...(canUpdate
+    // Status change is split by direction:
+    //  - deactivating (ACTIVE → INACTIVE) is the "baja" → needs users.delete
+    //  - reactivating (INACTIVE → ACTIVE) → needs users.update
+    // The action shows if the user has either permission; per row, the icon only
+    // renders for the transition they're allowed to make (otherwise the row shows
+    // no status button and the click is a no-op).
+    ...(canUpdate || canDelete
       ? [
           {
-            icon: (row: any) =>
-              row.status === 'ACTIVE' ? (
+            icon: (row: any) => {
+              const allowed = row.status === 'ACTIVE' ? canDelete : canUpdate;
+              if (!allowed) return null;
+              return row.status === 'ACTIVE' ? (
                 <UserX className="w-4 h-4 text-red-600" />
               ) : (
                 <UserCheck className="w-4 h-4 text-green-600" />
-              ),
+              );
+            },
             label: 'Cambiar estado',
-            onClick: (row: any) => onChangeStatus(row),
+            onClick: (row: any) => {
+              const allowed = row.status === 'ACTIVE' ? canDelete : canUpdate;
+              if (allowed) onChangeStatus(row);
+            },
             className: 'hover:bg-gray-100',
           },
         ]

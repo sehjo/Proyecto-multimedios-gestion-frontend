@@ -24,6 +24,8 @@ export default function UsersPage() {
   // Permission gates (UX only; the backend enforces each endpoint).
   const canCreate = can('users.create');
   const canUpdate = can('users.update');
+  // Deactivating a user is the "baja" (delete); reactivating requires update.
+  const canDelete = can('users.delete');
 
   const {
     canView,
@@ -87,6 +89,7 @@ export default function UsersPage() {
         <UsersTable
           users={pagedUsers}
           canUpdate={canUpdate}
+          canDelete={canDelete}
           onView={setViewUser}
           onEdit={form.openEdit}
           onChangeStatus={setConfirmUser}

@@ -22,11 +22,31 @@ Run the following command to install required dependencies:
 npm i
 ```
 
+The dev tooling (ESLint + TypeScript) is already listed in `package.json`, so
+`npm i` installs it too. It was added with:
+```bash
+npm install -D eslint @eslint/js typescript typescript-eslint eslint-plugin-react-hooks eslint-plugin-react-refresh globals @types/react @types/react-dom
+```
+
 ### Running the Code
 Start the development server with Vite:
 ```bash
 npm run dev
 ```
+
+## Code Quality
+
+The project uses **ESLint** (with `typescript-eslint` and the React Hooks
+rules) and **TypeScript** for static checking.
+
+- Run the linter:
+  ```bash
+  npm run lint
+  ```
+- Run the type checker (no emit):
+  ```bash
+  npm run typecheck
+  ```
 
 Project origin link (Figma Design Reference): 
 [Frontend for Database (copia)](https://www.figma.com/design/AyxfN0mutqWVWHbLRaHy2f/Frontend-for-Database--copia-)

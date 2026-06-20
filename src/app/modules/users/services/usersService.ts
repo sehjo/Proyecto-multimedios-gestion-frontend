@@ -1,0 +1,92 @@
+import api from '@/api/client';
+import type { User, UserFormData, Role } from '../types/users.types';
+
+interface UsersQuery {
+  page?: number;
+  perPage?: number;
+  role?: string;
+  status?: string;
+  name?: string;
+  email?: string;
+}
+
+interface PaginatedUsers {
+  data: User[];
+  meta?: { last_page?: number };
+}
+
+export const getUsers = async ({
+  page = 1,
+  perPage = 15,
+  role,
+  status,
+  name,
+  email,
+}: UsersQuery = {}): Promise<PaginatedUsers> => {
+  const params: Record<string, unknown> = { page, per_page: perPage };
+  if (role) params.role = role;
+  if (status) params.status = status;
+  if (name) params.name = name;
+  if (email) params.email = email;
+  const response = await api.get('/users', { params });
+  return response.data;
+};
+
+export const getUser = async (id: number): Promise<User> => {
+  const response = await api.get(`/users/${id}`);
+  return response.data;
+};
+
+// Fetch ALL users by walking every page. Needed where the full list matters
+// (search/pagination run client-side until the backend index filters server-side).
+export const getAllUsers = async (filters: UsersQuery = {}): Promise<PaginatedUsers> => {
+  const first = await getUsers({ ...filters, page: 1 });
+  const lastPage = first?.meta?.last_page ?? 1;
+  let data = first?.data ?? [];
+  for (let page = 2; page <= lastPage; page++) {
+    const res = await getUsers({ ...filters, page });
+    data = data.concat(res?.data ?? []);
+  }
+  return { ...first, data };
+};
+
+// Payload for POST /users. The role is sent as user_type_id (integer FK to
+// users_types), which is what the backend validates (required|integer|exists).
+export interface CreateUserPayload {
+  name: string;
+  lastname: string;
+  email: string;
+  user_type_id: number;
+  password?: string;
+}
+
+// POST /users requires the role (user_type_id); backend may generate a temp password.
+export const createUser = async (payload: CreateUserPayload) => {
+  const response = await api.post('/users', payload);
+  return response.data;
+};
+
+// PUT /users/{id} updates profile fields only — roles are managed from the Roles
+// tab, so the role/user_type_id is intentionally omitted here.
+export const updateUser = async (
+  id: number,
+  payload: Partial<Pick<UserFormData, 'name' | 'lastname' | 'email' | 'password'>>
+) => {
+  const response = await api.put(`/users/${id}`, payload);
+  return response.data;
+};
+
+// There is no DELETE for users (405); the "baja" is a status change.
+// Backend: PUT /users/{id}/status (the plain-PHP API uses PUT, not PATCH).
+// Direction-based authorization: deactivating needs users.delete, reactivating
+// needs users.update (the UI gates the buttons the same way).
+export const changeUserStatus = async (id: number, status: 'ACTIVE' | 'INACTIVE') => {
+  const response = await api.put(`/users/${id}/status`, { status });
+  return response.data;
+};
+
+// Roles feed the create-form selector. GET /roles returns a RoleResource array.
+export const getRoles = async (): Promise<Role[]> => {
+  const response = await api.get('/roles');
+  return Array.isArray(response.data) ? response.data : response.data?.data ?? [];
+};

@@ -15,35 +15,41 @@ import {
   Menu,
   X,
   History,
+  ShieldCheck,
+  ScrollText,
 } from 'lucide-react';
 import { useAuth } from '../modules/auth';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Hide nav entries the user can't access (UX gate; the backend still enforces).
+  // `perm: null` → always visible. Otherwise needs the matching read permission.
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Pacientes', href: '/patients', icon: UserCircle },
-    { name: 'Citas', href: '/appointments', icon: CalendarDays },
-    { name: 'Historial MÃ©dico', href: '/medical-history', icon: History },
-    { name: 'Usuarios', href: '/users', icon: Users },
-    { name: 'Agenda', href: '/agenda', icon: CalendarDays },
-    { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock },
-    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX },
-    { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope },
-    { name: 'ConfiguraciÃ³n', href: '/settings', icon: Settings },
-    { name: 'Notificaciones', href: '/notifications', icon: Bell },
-  ];
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, perm: null },
+    { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
+    { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: null },
+    { name: 'Historial Médico', href: '/medical-history', icon: History, perm: null },
+    { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
+    { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
+    { name: 'Auditoría', href: '/audit', icon: ScrollText, perm: null },
+    { name: 'Notificaciones', href: '/notifications', icon: Bell, perm: null },
+    { name: 'Agenda', href: '/agenda', icon: CalendarDays, perm: null },
+    { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock, perm: null },
+    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX, perm: null },
+    { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope, perm: null },
+    { name: 'Configuración', href: '/settings', icon: Settings, perm: null },
+  ].filter((item) => item.perm === null || can(item.perm));
 
   const isNavActive = (href: string) =>
     href === '/'
       ? location.pathname === '/'
       : location.pathname === href || location.pathname.startsWith(href + '/');
 
-  const currentPageTitle = navigation.find((item) => isNavActive(item.href))?.name ?? 'PÃ¡gina no encontrada';
+  const currentPageTitle = navigation.find((item) => isNavActive(item.href))?.name ?? 'Página no encontrada';
 
   useEffect(() => {
     document.title = `${currentPageTitle} | CCSS Consultorio`;
@@ -72,7 +78,7 @@ export default function Layout() {
     <div className="app-layout flex h-screen bg-gray-50">
       <button
         type="button"
-        aria-label="Cerrar menÃº de navegaciÃ³n"
+        aria-label="Cerrar menú de navegación"
         onClick={() => setIsSidebarOpen(false)}
         className={`app-sidebar-backdrop fixed inset-0 z-30 bg-black/40 transition-opacity duration-300 lg:hidden ${
           isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -96,7 +102,7 @@ export default function Layout() {
             </div>
             <button
               type="button"
-              aria-label="Cerrar menÃº"
+              aria-label="Cerrar menú"
               onClick={() => setIsSidebarOpen(false)}
               className="rounded-md p-1 text-gray-500 hover:bg-gray-100 lg:hidden"
             >
@@ -137,7 +143,7 @@ export default function Layout() {
             </div>
             <button
               onClick={handleLogout}
-              title="Cerrar sesiÃ³n"
+              title="Cerrar sesión"
               className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded"
             >
               <LogOut className="w-4 h-4" />
@@ -151,7 +157,7 @@ export default function Layout() {
         <header className="app-mobile-header flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
           <button
             type="button"
-            aria-label="Abrir menÃº de navegaciÃ³n"
+            aria-label="Abrir menú de navegación"
             onClick={() => setIsSidebarOpen(true)}
             className="rounded-md p-1 text-gray-600 hover:bg-gray-100"
           >

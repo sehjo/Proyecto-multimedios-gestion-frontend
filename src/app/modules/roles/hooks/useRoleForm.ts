@@ -76,20 +76,24 @@ export function useRoleForm(onSaved: (msg: string, type?: 'success' | 'info') =>
       const trimmed = name.trim();
 
       if (editingRole) {
-        // Send only changed fields (no-op guard).
-        const payload: { name?: string; permissions?: string[] } = {};
-        if (trimmed !== editingRole.name) payload.name = trimmed;
-
+        // PUT /roles/{id} validates `name` as required even when only the
+        // permissions change, so always send the name; permissions go only when
+        // they actually changed.
+        const nameChanged = trimmed !== editingRole.name;
         const before = new Set(editingRole.permissions);
         const permsChanged =
           effective.length !== before.size || effective.some((p) => !before.has(p));
-        if (permsChanged) payload.permissions = effective;
 
-        if (Object.keys(payload).length === 0) {
+        // No-op guard: nothing to save.
+        if (!nameChanged && !permsChanged) {
           closeModal();
           onSaved('No hay cambios por guardar.', 'info');
           return;
         }
+
+        const payload: { name: string; permissions?: string[] } = { name: trimmed };
+        if (permsChanged) payload.permissions = effective;
+
         await updateRole(editingRole.id, payload);
         onSaved('Se ha actualizado correctamente el registro.');
       } else {

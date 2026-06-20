@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { buildPermissionGrid, enableWithDeps, disableWithDeps, PermissionRow } from '../lib/permissions';
 import PermissionGrid from '../components/PermissionGrid';
 import AssignRolesModal from '../components/AssignRolesModal';
+import PageHeader from '../components/PageHeader';
 import editIcon from '../../assets/edit.svg';
 import deleteIcon from '../../assets/delete.svg';
 
@@ -230,32 +231,26 @@ export default function Roles() {
   return (
     <div className="app-page p-8">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="app-page-header flex items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Roles</h1>
-          <p className="text-gray-500 text-sm">Gestión de roles del sistema</p>
-        </div>
-        <div className="app-page-header-actions flex flex-wrap items-center gap-3">
-          {canCreate && (
-            <button
-              onClick={openCreate}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4 flex-shrink-0" />
-              Nuevo Rol
-            </button>
-          )}
-          {canAssignRoles && (
-            <button
-              onClick={() => setAssignRolesOpen(true)}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4 flex-shrink-0" />
-              Asignar Roles
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader title="Roles" subtitle="Gestión de roles del sistema">
+        {canCreate && (
+          <button
+            onClick={openCreate}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            Nuevo Rol
+          </button>
+        )}
+        {canAssignRoles && (
+          <button
+            onClick={() => setAssignRolesOpen(true)}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 flex-shrink-0" />
+            Asignar Roles
+          </button>
+        )}
+      </PageHeader>
 
       {!canView ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">

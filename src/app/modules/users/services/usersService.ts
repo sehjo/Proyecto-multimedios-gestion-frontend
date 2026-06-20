@@ -63,8 +63,11 @@ export const updateUser = async (id: number, payload: Partial<UserFormData>) => 
 };
 
 // There is no DELETE for users (405); the "baja" is a status change.
+// Backend: PUT /users/{id}/status (the plain-PHP API uses PUT, not PATCH).
+// Direction-based authorization: deactivating needs users.delete, reactivating
+// needs users.update (the UI gates the buttons the same way).
 export const changeUserStatus = async (id: number, status: 'ACTIVE' | 'INACTIVE') => {
-  const response = await api.patch(`/users/${id}/status`, { status });
+  const response = await api.put(`/users/${id}/status`, { status });
   return response.data;
 };
 

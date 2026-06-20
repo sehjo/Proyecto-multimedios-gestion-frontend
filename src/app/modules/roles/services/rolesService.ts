@@ -62,10 +62,11 @@ export const getUser = async (id: number) => {
   return response.data;
 };
 
-// Replace the user's WHOLE role set atomically (Spatie syncRoles), validating the
-// final state in a single call. PUT /users/{id}/roles { roles: [names] }.
+// Replace the user's WHOLE role set atomically, validating the final state in a
+// single call. PUT /users/{id}/roles { roles: [user_type_id, ...] } — the backend
+// expects role IDS (not names); the first id becomes the primary role.
 // Errors: 422 (empty/invalid), 409 LAST_ADMIN, 403 SELF_ACTION_FORBIDDEN.
-export const syncUserRoles = async (userId: number, roleNames: string[]) => {
-  const response = await api.put(`/users/${userId}/roles`, { roles: roleNames });
+export const syncUserRoles = async (userId: number, roleIds: number[]) => {
+  const response = await api.put(`/users/${userId}/roles`, { roles: roleIds });
   return response.data;
 };

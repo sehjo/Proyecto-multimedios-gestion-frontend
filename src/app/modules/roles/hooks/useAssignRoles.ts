@@ -107,12 +107,13 @@ export function useAssignRoles(onAssigned: (msg: string) => void) {
     if (!selectedUser || !hasChanges || saving) return; // ignore double clicks
 
     // Send the COMPLETE final selection; the backend syncs the whole set
-    // atomically (PUT /users/{id}/roles), validating the final state.
-    const finalRoleNames = roles.filter((r) => selected.has(r.id)).map((r) => r.name);
+    // atomically (PUT /users/{id}/roles { roles: [user_type_id, ...] }), with the
+    // first id as the primary role. It expects role IDS, not names.
+    const finalRoleIds = roles.filter((r) => selected.has(r.id)).map((r) => r.id);
 
     setSaving(true);
     try {
-      await syncUserRoles(selectedUser.id, finalRoleNames);
+      await syncUserRoles(selectedUser.id, finalRoleIds);
       onAssigned('Los roles se han actualizado correctamente.');
     } catch (error: any) {
       // Keep the modal open; surface 422 / 409 LAST_ADMIN / 403 SELF_ACTION_FORBIDDEN.

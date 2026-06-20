@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Search, Eye, Stethoscope } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import DataTable from '../components/DataTable';
+import PageHeader from '../components/PageHeader';
 import { MOCK_PATIENTS } from '../../api/mockData';
 
 export default function MedicalHistory() {
@@ -43,12 +44,10 @@ export default function MedicalHistory() {
 
   return (
     <div className="app-page p-8">
-      <div className="app-page-header flex items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Historial Médico</h1>
-          <p className="text-gray-500">Consulta el historial médico completo de cada paciente</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Historial Médico"
+        subtitle="Consulta el historial médico completo de cada paciente"
+      />
 
       <div className="mb-6">
         <div className="app-page-search relative max-w-md">

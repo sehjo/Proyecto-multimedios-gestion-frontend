@@ -3,6 +3,7 @@ import { Plus, Filter, X, AlertTriangle, XCircle, RefreshCw, CheckCircle, Info }
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import DataTable from '../components/DataTable';
+import PageHeader from '../components/PageHeader';
 import {
   MOCK_PATIENTS,
   MOCK_DOCTORS,
@@ -514,11 +515,7 @@ export default function Appointments() {
     <div className="app-page p-8">
 
       {/* Header */}
-      <div className="app-page-header flex items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Citas</h1>
-          <p className="text-gray-500">Gestión de citas médicas</p>
-        </div>
+      <PageHeader title="Citas" subtitle="Gestión de citas médicas">
         <button
           onClick={() => { resetForm(); setShowModal(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -526,7 +523,7 @@ export default function Appointments() {
           <Plus className="w-5 h-5" />
           Nueva Cita
         </button>
-      </div>
+      </PageHeader>
 
       {/* Filter bar */}
       <div className="mb-5 bg-white rounded-xl border border-gray-200 px-4 py-3">

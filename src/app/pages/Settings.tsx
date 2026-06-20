@@ -13,7 +13,7 @@ export default function Settings() {
   const [userTypes, setUserTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
   const [formName, setFormName] = useState('');
 
   useEffect(() => {

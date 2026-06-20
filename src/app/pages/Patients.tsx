@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, AlertTriangle, Eye } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import DataTable from '../components/DataTable';
+import PageHeader from '../components/PageHeader';
 import { getPatients, createPatient, updatePatient, deletePatient, getUsers } from '../../api/services';
 import { toast } from 'sonner';
 import { useActivity } from '../../context/ActivityContext';
@@ -15,7 +16,7 @@ export default function Patients() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<any>(null);
-  const [editingPatient, setEditingPatient] = useState(null);
+  const [editingPatient, setEditingPatient] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [formData, setFormData] = useState({
@@ -176,11 +177,7 @@ export default function Patients() {
 
   return (
     <div className="app-page p-8">
-      <div className="app-page-header flex items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Pacientes</h1>
-          <p className="text-gray-500">Gestión de pacientes registrados</p>
-        </div>
+      <PageHeader title="Pacientes" subtitle="Gestión de pacientes registrados">
         <button
           onClick={() => {
             resetForm();
@@ -191,7 +188,7 @@ export default function Patients() {
           <Plus className="w-5 h-5" />
           Nuevo Paciente
         </button>
-      </div>
+      </PageHeader>
 
       {/* Search Bar */}
       <div className="mb-6">

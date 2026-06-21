@@ -28,6 +28,7 @@ export const router = createBrowserRouter([
           { path: 'bloqueo-agenda', lazy: () => import('./pages/BloqueoAgenda').then(m => ({ Component: m.default })) },
           { path: 'resumen-diario', lazy: () => import('./pages/ResumenDiario').then(m => ({ Component: m.default })) },
           { path: 'settings', lazy: () => import('./pages/Settings').then(m => ({ Component: m.default })) },
+          { path: 'reports/patients', lazy: () => import('./modules/patientsReport/pages/PatientsReportPage').then(m => ({ Component: m.default })) },
           { path: 'reports/appointments', lazy: () => import('./modules/appointmentsReport/pages/AppointmentsReportPage').then(m => ({ Component: m.default })) },
           { path: 'notifications', lazy: () => import('./modules/notifications/pages/NotificationSettingsPage').then(m => ({ Component: m.default })) },
           { path: 'medical-history', lazy: () => import('./pages/MedicalHistory').then(m => ({ Component: m.default })) },

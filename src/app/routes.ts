@@ -25,6 +25,7 @@ export const router = createBrowserRouter([
           { path: 'roles', lazy: () => import('./modules/roles/pages/RolesPage').then(m => ({ Component: m.default })) },
           { path: 'agenda', lazy: () => import('./pages/Agenda').then(m => ({ Component: m.default })) },
           { path: 'horario-config', lazy: () => import('./pages/HorarioConfig').then(m => ({ Component: m.default })) },
+          { path: 'institution-schedule', lazy: () => import('./modules/institutionSchedule/pages/InstitutionSchedulePage').then(m => ({ Component: m.default })) },
           { path: 'bloqueo-agenda', lazy: () => import('./pages/BloqueoAgenda').then(m => ({ Component: m.default })) },
           { path: 'resumen-diario', lazy: () => import('./pages/ResumenDiario').then(m => ({ Component: m.default })) },
           { path: 'settings', lazy: () => import('./pages/Settings').then(m => ({ Component: m.default })) },

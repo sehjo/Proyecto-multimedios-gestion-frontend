@@ -17,6 +17,7 @@ import {
   BarChart3,
   ShieldCheck,
   ScrollText,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '../modules/auth';
 
@@ -39,6 +40,7 @@ export default function Layout() {
     { name: 'Ocupación por Doctor', href: '/reports/doctors', icon: BarChart3, perm: null },
     { name: 'Agenda', href: '/agenda', icon: CalendarDays, perm: null },
     { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock, perm: null },
+    { name: 'Horario Institucional', href: '/institution-schedule', icon: Building2, perm: null },
     { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX, perm: null },
     { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope, perm: null },
     { name: 'Configuración', href: '/settings', icon: Settings, perm: null },

@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import PageContainer from '../../../components/PageContainer';
 import PageHeader from '../../../components/PageHeader';
 import { useInstitutionSchedule } from '../hooks/useInstitutionSchedule';
+import { useHolidays } from '../hooks/useHolidays';
 import {
-  WeekScheduleGrid,
-  SchedulePersistenceNotice,
-  ScheduleBannerNotice,
-  ScheduleSaveBar,
+  ScheduleTabs,
+  WeeklyAvailabilitySection,
+  HolidaysSection,
+  type ScheduleTabKey,
 } from '../components';
 
 export default function InstitutionSchedulePage() {
+  const [activeTab, setActiveTab] = useState<ScheduleTabKey>('weekly');
+
   const {
     schedule,
     errors,
@@ -23,6 +27,8 @@ export default function InstitutionSchedulePage() {
     save,
   } = useInstitutionSchedule();
 
+  const holidays = useHolidays();
+
   return (
     <PageContainer>
       <PageHeader
@@ -30,20 +36,38 @@ export default function InstitutionSchedulePage() {
         subtitle="Configure los días habilitados y los rangos de apertura y cierre de la institución."
       />
 
-      <ScheduleBannerNotice banner={banner} onDismiss={dismissBanner} />
+      <ScheduleTabs active={activeTab} onChange={setActiveTab} />
 
-      <SchedulePersistenceNotice />
+      {activeTab === 'weekly' && (
+        <WeeklyAvailabilitySection
+          schedule={schedule}
+          errors={errors}
+          isValid={isValid}
+          banner={banner}
+          saving={saving}
+          onDismissBanner={dismissBanner}
+          onToggleDay={toggleDay}
+          onAddInterval={addInterval}
+          onRemoveInterval={removeInterval}
+          onChangeInterval={updateInterval}
+          onSave={save}
+        />
+      )}
 
-      <WeekScheduleGrid
-        schedule={schedule}
-        errors={errors}
-        onToggleDay={toggleDay}
-        onAddInterval={addInterval}
-        onRemoveInterval={removeInterval}
-        onChangeInterval={updateInterval}
-      />
-
-      <ScheduleSaveBar isValid={isValid} saving={saving} onSave={save} />
+      {activeTab === 'holidays' && (
+        <HolidaysSection
+          holidays={holidays.holidays}
+          form={holidays.form}
+          errors={holidays.errors}
+          today={holidays.today}
+          pending={holidays.pending}
+          onFieldChange={holidays.updateField}
+          onSubmit={holidays.requestAddHoliday}
+          onConfirmPending={holidays.confirmPendingHoliday}
+          onCancelPending={holidays.cancelPendingHoliday}
+          onRemove={holidays.removeHoliday}
+        />
+      )}
     </PageContainer>
   );
 }

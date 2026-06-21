@@ -2,6 +2,7 @@
 // for this yet (frontend mock), so the schedule is stored in localStorage. This
 // keeps the contract small so a real API service can replace it later.
 import { DEFAULT_SCHEDULE, JS_DAY_TO_WEEKDAY, SCHEDULE_STORAGE_KEY } from '../constants';
+import { isHoliday } from './holidaysService';
 import type { WeekSchedule } from '../types/institutionSchedule.types';
 
 // Read the saved schedule, falling back to the default when nothing is stored
@@ -35,6 +36,9 @@ export function isWithinInstitutionSchedule(
   time: string,
   schedule: WeekSchedule = getInstitutionSchedule()
 ): boolean {
+  // A registered holiday/closure blocks the whole day regardless of the weekly
+  // schedule (HU-039 overrides HU-038 for that date).
+  if (isHoliday(date)) return false;
   const jsDay = new Date(`${date}T12:00:00`).getDay();
   const weekday = JS_DAY_TO_WEEKDAY[jsDay];
   const day = schedule.find((d) => d.weekday === weekday);

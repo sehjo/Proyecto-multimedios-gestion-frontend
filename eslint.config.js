@@ -33,6 +33,7 @@ export default tseslint.config(
             { target: './src/app/modules/users', from: './src/app/modules', except: ['./users'] },
             { target: './src/app/modules/roles', from: './src/app/modules', except: ['./roles'] },
             { target: './src/app/modules/appointments', from: './src/app/modules', except: ['./appointments'] },
+            { target: './src/app/modules/medicalHistory', from: './src/app/modules', except: ['./medicalHistory'] },
             // The app shell (routes/App) is the top layer: modules can't import it.
             { target: './src/app/modules', from: './src/app/App.tsx' },
             { target: './src/app/modules', from: './src/app/routes.ts' },

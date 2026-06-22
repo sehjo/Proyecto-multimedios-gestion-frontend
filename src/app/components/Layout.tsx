@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
   Users,
   UserCircle,
-  ClipboardList,
   CalendarDays,
+  ClipboardList,
   CalendarClock,
   CalendarX,
   Stethoscope,
@@ -13,27 +13,43 @@ import {
   LogOut,
   Menu,
   X,
+  History,
+  BarChart3,
+  ShieldCheck,
+  ScrollText,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../modules/auth';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Hide nav entries the user can't access (UX gate; the backend still enforces).
+  // `perm: null` → always visible. Otherwise needs the matching read permission.
   const navigation = [
-    { name: 'Dashboard',     href: '/',         icon: LayoutDashboard },
-    { name: 'Pacientes',     href: '/patients', icon: UserCircle      },
-    { name: 'Usuarios',      href: '/users',    icon: Users           },
-    { name: 'Agenda',            href: '/agenda',         icon: CalendarDays  },
-    { name: 'Bloques Horarios',  href: '/horario-config', icon: CalendarClock },
-    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX      },
-    { name: 'Resumen Diario',   href: '/resumen-diario', icon: Stethoscope    },
-    { name: 'Configuración',     href: '/settings',       icon: Settings      },
-  ];
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, perm: null },
+    { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
+    { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: null },
+    { name: 'Historial Médico', href: '/medical-history', icon: History, perm: null },
+    { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
+    { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
+    { name: 'Auditoría', href: '/audit', icon: ScrollText, perm: null },
+    { name: 'Ocupación por Doctor', href: '/reports/doctors', icon: BarChart3, perm: null },
+    { name: 'Agenda', href: '/agenda', icon: CalendarDays, perm: null },
+    { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock, perm: null },
+    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX, perm: null },
+    { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope, perm: null },
+    { name: 'Configuración', href: '/settings', icon: Settings, perm: null },
+  ].filter((item) => item.perm === null || can(item.perm));
 
-  const currentPageTitle = navigation.find((item) => item.href === location.pathname)?.name ?? 'Página no encontrada';
+  const isNavActive = (href: string) =>
+    href === '/'
+      ? location.pathname === '/'
+      : location.pathname === href || location.pathname.startsWith(href + '/');
+
+  const currentPageTitle = navigation.find((item) => isNavActive(item.href))?.name ?? 'Página no encontrada';
 
   useEffect(() => {
     document.title = `${currentPageTitle} | CCSS Consultorio`;
@@ -97,7 +113,7 @@ export default function Layout() {
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
+            const isActive = isNavActive(item.href);
             return (
               <Link
                 key={item.name}

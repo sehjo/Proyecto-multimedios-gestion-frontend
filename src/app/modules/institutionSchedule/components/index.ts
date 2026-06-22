@@ -16,3 +16,7 @@ export { default as HolidayCalendar } from './HolidayCalendar';
 export { default as AffectedAppointmentsList } from './AffectedAppointmentsList';
 export { default as AffectedAppointmentItem } from './AffectedAppointmentItem';
 export { default as ConfirmHolidayModal } from './ConfirmHolidayModal';
+export { default as RescheduleModal } from './RescheduleModal';
+export { default as RescheduleAppointmentModal } from './RescheduleAppointmentModal';
+export { default as AvailableSlotPicker } from './AvailableSlotPicker';
+export { default as RescheduleQueueTable } from './RescheduleQueueTable';

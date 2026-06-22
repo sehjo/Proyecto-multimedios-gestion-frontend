@@ -6,6 +6,7 @@ import {
   getHolidays,
   saveHolidays,
 } from '../services/holidaysService';
+import { enqueueReschedules } from '../services/rescheduleQueueService';
 import { todayISO } from '../holidays.constants';
 import type {
   AffectedAppointment,
@@ -31,7 +32,9 @@ interface PendingHoliday {
 // required, no duplicate date), a confirmation step when the date collides with
 // existing appointments, and persistence. The colliding appointments are
 // reviewed in the confirmation modal before the closure is saved (HU-039).
-export function useHolidays() {
+// `onEnqueued` runs after a confirmed closure adds appointments to the
+// reschedule queue, so callers can refresh any queue-derived state.
+export function useHolidays(onEnqueued?: () => void) {
   const { logActivity } = useActivity();
 
   const [holidays, setHolidays] = useState<Holiday[]>(getHolidays);
@@ -40,6 +43,10 @@ export function useHolidays() {
 
   // Set while the confirmation modal is open (collision with appointments).
   const [pending, setPending] = useState<PendingHoliday | null>(null);
+
+  // Set right after a closure with collisions is confirmed: holds the displaced
+  // appointments to drive the "Reagenda" prompt.
+  const [reschedulePrompt, setReschedulePrompt] = useState<AffectedAppointment[]>([]);
 
   const today = useMemo(() => todayISO(), []);
 
@@ -111,15 +118,23 @@ export function useHolidays() {
     commitHoliday(holiday, []);
   }, [form, validate, commitHoliday]);
 
-  // Admin confirmed the closure despite the colliding appointments.
+  // Admin confirmed the closure despite the colliding appointments: save it,
+  // queue the displaced appointments for rescheduling and open the "Reagenda"
+  // prompt so staff can act on them now or later.
   const confirmPendingHoliday = useCallback(() => {
     if (!pending) return;
     commitHoliday(pending.holiday, pending.appointments);
+    enqueueReschedules(pending.appointments, pending.holiday.title);
+    setReschedulePrompt(pending.appointments);
     setPending(null);
-  }, [pending, commitHoliday]);
+    onEnqueued?.();
+  }, [pending, commitHoliday, onEnqueued]);
 
   // Admin backed out (e.g. picked the wrong day); nothing is saved.
   const cancelPendingHoliday = useCallback(() => setPending(null), []);
+
+  // Close the "Reagenda" prompt ("Hacerlo más tarde"); the queue stays persisted.
+  const dismissReschedulePrompt = useCallback(() => setReschedulePrompt([]), []);
 
   const removeHoliday = useCallback(
     (id: string) => {
@@ -134,10 +149,12 @@ export function useHolidays() {
     errors,
     today,
     pending,
+    reschedulePrompt,
     updateField,
     requestAddHoliday,
     confirmPendingHoliday,
     cancelPendingHoliday,
+    dismissReschedulePrompt,
     removeHoliday,
   };
 }

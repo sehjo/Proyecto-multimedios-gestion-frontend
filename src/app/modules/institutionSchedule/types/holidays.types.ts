@@ -34,3 +34,11 @@ export interface AffectedAppointment {
   date: string;
   time: string;
 }
+
+// An appointment queued for rescheduling after its date became a holiday. Keeps
+// the original date/time for reference and the holiday reason that displaced it.
+export interface PendingReschedule extends AffectedAppointment {
+  originalDate: string;
+  originalTime: string;
+  holidayTitle: string;
+}

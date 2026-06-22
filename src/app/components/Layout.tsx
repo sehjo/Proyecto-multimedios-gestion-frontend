@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
@@ -14,9 +14,11 @@ import {
   Menu,
   X,
   History,
+  BarChart3,
   ShieldCheck,
+  ScrollText,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../modules/auth';
 
 export default function Layout() {
   const location = useLocation();
@@ -29,12 +31,12 @@ export default function Layout() {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, perm: null },
     { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
-    // Appointments, Medical History and the agenda module still use mock data (no
-    // backend permission defined yet): visible to everyone until wired to the API.
     { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: null },
     { name: 'Historial Médico', href: '/medical-history', icon: History, perm: null },
     { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
     { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
+    { name: 'Auditoría', href: '/audit', icon: ScrollText, perm: null },
+    { name: 'Ocupación por Doctor', href: '/reports/doctors', icon: BarChart3, perm: null },
     { name: 'Agenda', href: '/agenda', icon: CalendarDays, perm: null },
     { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock, perm: null },
     { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX, perm: null },

@@ -9,6 +9,7 @@ import {
   ScheduleTabs,
   WeeklyAvailabilitySection,
   HolidaysSection,
+  AvailabilitySection,
   RescheduleModal,
   type ScheduleTabKey,
 } from '../components';
@@ -75,6 +76,8 @@ export default function InstitutionSchedulePage() {
           onSave={save}
         />
       )}
+
+      {activeTab === 'availability' && <AvailabilitySection />}
 
       {activeTab === 'holidays' && (
         <HolidaysSection

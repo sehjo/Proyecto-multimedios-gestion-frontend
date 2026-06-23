@@ -21,3 +21,6 @@ export { default as RescheduleModal } from './RescheduleModal';
 export { default as RescheduleAppointmentModal } from './RescheduleAppointmentModal';
 export { default as AvailableSlotPicker } from './AvailableSlotPicker';
 export { default as RescheduleQueueTable } from './RescheduleQueueTable';
+export { default as AvailabilitySection } from './AvailabilitySection';
+export { default as AvailabilityCalendar } from './AvailabilityCalendar';
+export { default as DayDetailModal } from './DayDetailModal';

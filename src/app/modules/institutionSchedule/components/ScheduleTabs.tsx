@@ -1,5 +1,5 @@
 // Tab keys for the institution schedule page.
-export type ScheduleTabKey = 'weekly' | 'holidays';
+export type ScheduleTabKey = 'weekly' | 'holidays' | 'availability';
 
 interface ScheduleTab {
   key: ScheduleTabKey;
@@ -7,8 +7,9 @@ interface ScheduleTab {
 }
 
 const TABS: ScheduleTab[] = [
-  { key: 'weekly', label: 'Disponibilidad semanal' },
+  { key: 'weekly', label: 'Horario semanal' },
   { key: 'holidays', label: 'Feriados' },
+  { key: 'availability', label: 'Disponibilidad' },
 ];
 
 interface ScheduleTabsProps {

@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, Ban } from 'lucide-react';
 import { MONTH_NAMES, todayISO } from '../holidays.constants';
+import { LEVEL_STYLE } from '../availability.constants';
+import { getDayAvailability } from '../services/availabilityService';
 import type { Holiday } from '../types/holidays.types';
 
 interface HolidayCalendarProps {
@@ -244,6 +246,11 @@ export default function HolidayCalendar({
                   );
                 }
 
+                // Occupancy dot (green/yellow/red) hints how busy the day is
+                // before declaring it a holiday. Hidden when selected/past.
+                const { level } = getDayAvailability(key);
+                const showDot = !isPast && !isSelected && level !== 'closed';
+
                 return (
                   <button
                     key={key}
@@ -251,7 +258,8 @@ export default function HolidayCalendar({
                     disabled={isPast}
                     onMouseDown={() => handleDayMouseDown(key)}
                     onMouseEnter={() => handleDayMouseEnter(key)}
-                    className={`h-10 rounded-lg border text-sm transition-colors select-none ${
+                    title={isPast ? undefined : `Ocupación: ${LEVEL_STYLE[level].label.toLowerCase()}`}
+                    className={`relative h-10 rounded-lg border text-sm transition-colors select-none ${
                       isPast
                         ? 'border-transparent text-gray-300 cursor-not-allowed'
                         : isSelected
@@ -260,6 +268,11 @@ export default function HolidayCalendar({
                     }`}
                   >
                     {day}
+                    {showDot && (
+                      <span
+                        className={`absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full ${LEVEL_STYLE[level].dot}`}
+                      />
+                    )}
                   </button>
                 );
               })}
@@ -273,19 +286,37 @@ export default function HolidayCalendar({
         selecciona todos del mes · clic en el número de semana selecciona esa semana.
       </p>
 
-      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-blue-600 inline-block" />
-          Seleccionado
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-red-50 border border-red-200 inline-block" />
-          Feriado / cierre
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded border border-gray-200 inline-block" />
-          Disponible
-        </span>
+      <div className="mt-3 space-y-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-500">
+          <span className="font-medium text-gray-400">Día:</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-blue-600 inline-block" />
+            Seleccionado
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-red-50 border border-red-200 inline-block" />
+            Feriado / cierre
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded border border-gray-200 inline-block" />
+            Disponible
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-500">
+          <span className="font-medium text-gray-400">Ocupación:</span>
+          <span className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full inline-block ${LEVEL_STYLE.free.dot}`} />
+            Normal
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full inline-block ${LEVEL_STYLE.almost.dot}`} />
+            Alta
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full inline-block ${LEVEL_STYLE.full.dot}`} />
+            Sin cupos
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
@@ -9,32 +9,40 @@ import {
   CalendarClock,
   CalendarX,
   Stethoscope,
-  Settings,
   LogOut,
   Menu,
   X,
   History,
+  BarChart3,
+  ShieldCheck,
+  ScrollText,
+  UserCog,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../modules/auth';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Hide nav entries the user can't access (UX gate; the backend still enforces).
+  // `perm: null` → always visible. Otherwise needs the matching read permission.
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Pacientes', href: '/patients', icon: UserCircle },
-    { name: 'Citas', href: '/appointments', icon: CalendarDays },
-    { name: 'Historial Médico', href: '/medical-history', icon: History },
-    { name: 'Usuarios', href: '/users', icon: Users },
-    { name: 'Agenda', href: '/agenda', icon: CalendarDays },
-    { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock },
-    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX },
-    { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope },
-    { name: 'Configuración', href: '/settings', icon: Settings },
-  ];
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, perm: null },
+    { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
+    { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: null },
+    { name: 'Historial Médico', href: '/medical-history', icon: History, perm: null },
+    { name: 'Usuarios', href: '/users', icon: Users, perm: null },
+    { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
+    { name: 'Doctores', href: '/doctors', icon: UserCog, perm: null },
+    { name: 'Auditoría', href: '/audit', icon: ScrollText, perm: null },
+    { name: 'Ocupación por Doctor', href: '/reports/doctors', icon: BarChart3, perm: null },
+    { name: 'Agenda', href: '/agenda', icon: CalendarDays, perm: null },
+    { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock, perm: null },
+    { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX, perm: null },
+    { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope, perm: null },
+  ].filter((item) => item.perm === null || can(item.perm));
 
   const isNavActive = (href: string) =>
     href === '/'

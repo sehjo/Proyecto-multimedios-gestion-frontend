@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Ban } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Ban } from 'lucide-react';
 import { MONTH_NAMES, todayISO } from '../holidays.constants';
 import type { Holiday } from '../types/holidays.types';
 
@@ -30,24 +30,17 @@ export default function HolidayCalendar({
 }: HolidayCalendarProps) {
   const today = todayISO();
 
-  // Base month follows the first selected date; with none, the current month.
-  // Manual navigation adds an offset; picking new dates resets it via the
-  // render-time "adjust state on prop change" pattern (no effect needed).
-  const firstSelected = selectedDates.length > 0 ? [...selectedDates].sort()[0] : '';
-  const baseMonthKey = firstSelected ? firstSelected.slice(0, 7) : today.slice(0, 7);
-  const [navState, setNavState] = useState({ key: baseMonthKey, offset: 0 });
-  if (navState.key !== baseMonthKey) {
-    setNavState({ key: baseMonthKey, offset: 0 });
-  }
+  // The month shown is its own state, initialized once (to the first selected
+  // date, else the current month) and changed ONLY by navigation — the arrows
+  // and the month/year dropdowns. Selecting days must never move it.
+  const [cursor, setCursor] = useState(() => {
+    const first = selectedDates.length > 0 ? [...selectedDates].sort()[0] : today;
+    const [y, m] = first.split('-').map(Number);
+    return { year: y, month: m - 1 };
+  });
 
   // Whether a drag selection is in progress (mouse held down over the grid).
   const draggingRef = useRef(false);
-
-  const cursor = useMemo(() => {
-    const [by, bm] = baseMonthKey.split('-').map(Number);
-    const shifted = new Date(by, bm - 1 + navState.offset, 1);
-    return { year: shifted.getFullYear(), month: shifted.getMonth() };
-  }, [baseMonthKey, navState.offset]);
 
   const holidayByDate = useMemo(() => {
     const map = new Map<string, Holiday>();
@@ -70,8 +63,22 @@ export default function HolidayCalendar({
     return rows;
   }, [cursor]);
 
-  const goPrev = () => setNavState((s) => ({ ...s, offset: s.offset - 1 }));
-  const goNext = () => setNavState((s) => ({ ...s, offset: s.offset + 1 }));
+  const goPrev = () =>
+    setCursor((c) => (c.month === 0 ? { year: c.year - 1, month: 11 } : { ...c, month: c.month - 1 }));
+  const goNext = () =>
+    setCursor((c) => (c.month === 11 ? { year: c.year + 1, month: 0 } : { ...c, month: c.month + 1 }));
+
+  // Jump straight to an absolute month/year (the dropdowns).
+  const goToMonthYear = (year: number, monthIndex0: number) =>
+    setCursor({ year, month: monthIndex0 });
+
+  // Year range offered in the dropdown: a few years around the current cursor.
+  const yearOptions = useMemo(() => {
+    const center = cursor.year;
+    const years: number[] = [];
+    for (let y = center - 2; y <= center + 5; y++) years.push(y);
+    return years;
+  }, [cursor.year]);
 
   const selectableDay = (key: string) => key >= today && !holidayByDate.has(key);
 
@@ -106,15 +113,17 @@ export default function HolidayCalendar({
   const keysForWeek = (row: (number | null)[]): string[] =>
     row.filter((d): d is number => d !== null).map((d) => dateKey(cursor.year, cursor.month, d));
 
-  // Drag selection: add days as the pointer enters them with the button held.
+  // Selection is driven entirely by mouse down/enter/up (no onClick, which would
+  // fire a second toggle and undo a plain click). Mouse down on a day toggles it;
+  // dragging onto further days only adds them.
   const handleDayMouseDown = (key: string) => {
     if (!selectableDay(key)) return;
     draggingRef.current = true;
-    onChangeDates(Array.from(new Set([...selectedDates, key])));
+    toggleKeys([key]);
   };
 
   const handleDayMouseEnter = (key: string) => {
-    if (!draggingRef.current || !selectableDay(key)) return;
+    if (!draggingRef.current || !selectableDay(key) || selectedSet.has(key)) return;
     onChangeDates(Array.from(new Set([...selectedDates, key])));
   };
 
@@ -124,10 +133,39 @@ export default function HolidayCalendar({
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">
-          {MONTH_NAMES[cursor.month]} {cursor.year}
-        </h3>
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <select
+              value={cursor.month}
+              onChange={(e) => goToMonthYear(cursor.year, Number(e.target.value))}
+              aria-label="Mes"
+              className="appearance-none pl-2.5 pr-7 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {MONTH_NAMES.map((name, index) => (
+                <option key={name} value={index}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-2 w-4 h-4 text-gray-400" />
+          </div>
+          <div className="relative">
+            <select
+              value={cursor.year}
+              onChange={(e) => goToMonthYear(Number(e.target.value), cursor.month)}
+              aria-label="Año"
+              className="appearance-none pl-2.5 pr-7 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-2 w-4 h-4 text-gray-400" />
+          </div>
+        </div>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -213,7 +251,6 @@ export default function HolidayCalendar({
                     disabled={isPast}
                     onMouseDown={() => handleDayMouseDown(key)}
                     onMouseEnter={() => handleDayMouseEnter(key)}
-                    onClick={() => toggleKeys([key])}
                     className={`h-10 rounded-lg border text-sm transition-colors select-none ${
                       isPast
                         ? 'border-transparent text-gray-300 cursor-not-allowed'

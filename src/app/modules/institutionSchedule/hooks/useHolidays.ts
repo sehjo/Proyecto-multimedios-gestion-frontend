@@ -109,9 +109,9 @@ export function useHolidays(onEnqueued?: () => void) {
         toast.success('Día feriado registrado y bloqueado para nuevas citas.');
       }
 
-      // Keep the selected dates so the admin can register another nearby closure
-      // without re-picking; only clear the title and description.
-      setForm((prev) => ({ ...prev, title: '', description: '' }));
+      // Reset the whole form so the calendar clears its selection and the next
+      // closure starts from scratch (the saved dates are now blocked anyway).
+      setForm(EMPTY_FORM);
       setErrors({});
     },
     [holidays, logActivity]

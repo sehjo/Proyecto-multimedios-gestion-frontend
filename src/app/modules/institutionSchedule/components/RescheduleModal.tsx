@@ -38,8 +38,11 @@ export default function RescheduleModal({
     if (!active) return;
     const ok = onRescheduleOne(active, date, time);
     if (ok) {
+      const wasLast = pending.length === 1 && pending[0].id === active.id;
       setResolved((prev) => new Set(prev).add(active.id));
       setActive(null);
+      // Nothing left to reschedule: close the prompt (the queue stays persisted).
+      if (wasLast) onLater();
     }
   };
 

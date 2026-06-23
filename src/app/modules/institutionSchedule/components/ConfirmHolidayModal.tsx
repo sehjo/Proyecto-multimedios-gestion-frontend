@@ -1,6 +1,6 @@
 import { AlertTriangle, X } from 'lucide-react';
 import AffectedAppointmentsList from './AffectedAppointmentsList';
-import { formatLongDate } from '../holidays.format';
+import { formatDatesSummary } from '../holidays.format';
 import type { AffectedAppointment, Holiday } from '../types/holidays.types';
 
 interface ConfirmHolidayModalProps {
@@ -54,9 +54,9 @@ export default function ConfirmHolidayModal({
               <span className="font-medium text-gray-900 text-right">{holiday.title}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-gray-500">Fecha</span>
-              <span className="font-medium text-gray-900 text-right capitalize">
-                {formatLongDate(holiday.date)}
+              <span className="text-gray-500">{holiday.dates.length > 1 ? 'Fechas' : 'Fecha'}</span>
+              <span className="font-medium text-gray-900 text-right">
+                {formatDatesSummary(holiday.dates)}
               </span>
             </div>
             {holiday.description && (

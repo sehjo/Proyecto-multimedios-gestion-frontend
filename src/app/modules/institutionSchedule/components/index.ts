@@ -13,6 +13,7 @@ export { default as HolidaysSection } from './HolidaysSection';
 export { default as HolidayForm } from './HolidayForm';
 export { default as HolidayList } from './HolidayList';
 export { default as HolidayCalendar } from './HolidayCalendar';
+export { default as HolidayFilterBar } from './HolidayFilterBar';
 export { default as AffectedAppointmentsList } from './AffectedAppointmentsList';
 export { default as AffectedAppointmentItem } from './AffectedAppointmentItem';
 export { default as ConfirmHolidayModal } from './ConfirmHolidayModal';

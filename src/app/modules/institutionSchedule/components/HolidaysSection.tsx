@@ -2,7 +2,9 @@ import { CalendarClock } from 'lucide-react';
 import HolidayForm from './HolidayForm';
 import HolidayList from './HolidayList';
 import HolidayCalendar from './HolidayCalendar';
+import HolidayFilterBar from './HolidayFilterBar';
 import ConfirmHolidayModal from './ConfirmHolidayModal';
+import { useHolidayFilters } from '../hooks/useHolidayFilters';
 import type {
   AffectedAppointment,
   Holiday,
@@ -20,10 +22,12 @@ interface HolidaysSectionProps {
   holidays: Holiday[];
   form: HolidayFormData;
   errors: HolidayFormErrors;
-  today: string;
   pending: PendingHoliday | null;
   pendingRescheduleCount: number;
-  onFieldChange: (field: keyof HolidayFormData, value: string) => void;
+  onFieldChange: (field: 'title' | 'description', value: string) => void;
+  onChangeDates: (dates: string[]) => void;
+  onRemoveDate: (date: string) => void;
+  onClearDates: () => void;
   onSubmit: () => void;
   onConfirmPending: () => void;
   onCancelPending: () => void;
@@ -38,16 +42,20 @@ export default function HolidaysSection({
   holidays,
   form,
   errors,
-  today,
   pending,
   pendingRescheduleCount,
   onFieldChange,
+  onChangeDates,
+  onRemoveDate,
+  onClearDates,
   onSubmit,
   onConfirmPending,
   onCancelPending,
   onRemove,
   onGoToReschedule,
 }: HolidaysSectionProps) {
+  const filters = useHolidayFilters(holidays);
+
   return (
     <section>
       <div className="mb-4 flex items-start justify-between gap-4">
@@ -74,18 +82,28 @@ export default function HolidaysSection({
         <HolidayForm
           form={form}
           errors={errors}
-          today={today}
           onFieldChange={onFieldChange}
+          onRemoveDate={onRemoveDate}
+          onClearDates={onClearDates}
           onSubmit={onSubmit}
         />
         <HolidayCalendar
           holidays={holidays}
-          selectedDate={form.date}
-          onPickDate={(date) => onFieldChange('date', date)}
+          selectedDates={form.dates}
+          onChangeDates={onChangeDates}
         />
       </div>
 
-      <HolidayList holidays={holidays} onRemove={onRemove} />
+      <HolidayFilterBar
+        year={filters.year}
+        months={filters.months}
+        availableYears={filters.availableYears}
+        availableMonths={filters.availableMonths}
+        onSelectYear={filters.selectYear}
+        onToggleMonth={filters.toggleMonth}
+      />
+
+      <HolidayList holidays={filters.filteredHolidays} onRemove={onRemove} />
 
       {pending && (
         <ConfirmHolidayModal

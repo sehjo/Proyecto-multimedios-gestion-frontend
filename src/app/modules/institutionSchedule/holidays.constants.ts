@@ -3,6 +3,12 @@ import type { AffectedAppointment } from './types/holidays.types';
 // localStorage key for the persisted holidays list (mock backend).
 export const HOLIDAYS_STORAGE_KEY = 'institution_holidays';
 
+// Spanish month names indexed 0-11 (January = 0).
+export const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
 // Returns today's date as "YYYY-MM-DD" in local time (matches <input type="date">).
 export function todayISO(): string {
   const now = new Date();

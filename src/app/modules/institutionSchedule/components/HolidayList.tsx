@@ -1,5 +1,5 @@
 import { CalendarOff, Trash2, CalendarX } from 'lucide-react';
-import { formatLongDate } from '../holidays.format';
+import { formatDatesSummary } from '../holidays.format';
 import type { Holiday } from '../types/holidays.types';
 
 interface HolidayListProps {
@@ -40,8 +40,11 @@ export default function HolidayList({ holidays, onRemove }: HolidayListProps) {
                     Cerrado
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5 capitalize">
-                  {formatLongDate(holiday.date)}
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {formatDatesSummary(holiday.dates)}
+                  {holiday.dates.length > 1 && (
+                    <span className="text-gray-400"> · {holiday.dates.length} días</span>
+                  )}
                 </p>
                 {holiday.description && (
                   <p className="text-xs text-gray-400 mt-1">{holiday.description}</p>

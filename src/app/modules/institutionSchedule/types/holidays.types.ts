@@ -1,25 +1,27 @@
 // Domain types for institutional holidays / closures (HU-039).
 
-// A registered holiday or institutional closure. `date` is "YYYY-MM-DD"; the day
-// is blocked for new appointments. `title` is the public event name (e.g.
-// "Batalla de Rivas"); `description` is an internal note.
+// A registered holiday or institutional closure. `dates` holds every
+// "YYYY-MM-DD" the event covers (a single day = one entry; e.g. Semana Santa
+// spans several), all blocked for new appointments. `title` is the public event
+// name (e.g. "Batalla de Rivas"); `description` is an internal note.
 export interface Holiday {
   id: string;
-  date: string;
+  dates: string[];
   title: string;
   description: string;
 }
 
-// Shape of the create-holiday form.
+// Shape of the create-holiday form. `dates` are the days selected in the
+// calendar (sorted, "YYYY-MM-DD").
 export interface HolidayFormData {
-  date: string;
+  dates: string[];
   title: string;
   description: string;
 }
 
 // Field-level validation errors for the holiday form. Absence means valid.
 export interface HolidayFormErrors {
-  date?: string;
+  dates?: string;
   title?: string;
 }
 

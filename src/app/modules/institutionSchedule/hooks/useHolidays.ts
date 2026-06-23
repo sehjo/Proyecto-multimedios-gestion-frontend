@@ -15,7 +15,7 @@ import type {
   HolidayFormErrors,
 } from '../types/holidays.types';
 
-const EMPTY_FORM: HolidayFormData = { date: '', title: '', description: '' };
+const EMPTY_FORM: HolidayFormData = { dates: [], title: '', description: '' };
 
 function makeHolidayId(): string {
   return `hol-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -50,23 +50,44 @@ export function useHolidays(onEnqueued?: () => void) {
 
   const today = useMemo(() => todayISO(), []);
 
+  // Update a text field (title/description). Only title carries a validation error.
   const updateField = useCallback(
-    (field: keyof HolidayFormData, value: string) => {
+    (field: 'title' | 'description', value: string) => {
       setForm((prev) => ({ ...prev, [field]: value }));
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+      if (field === 'title') setErrors((prev) => ({ ...prev, title: undefined }));
     },
     []
   );
 
+  // Replace the whole selected-dates set (the calendar owns the selection logic).
+  const setDates = useCallback((dates: string[]) => {
+    setForm((prev) => ({ ...prev, dates: [...dates].sort() }));
+    setErrors((prev) => ({ ...prev, dates: undefined }));
+  }, []);
+
+  // Remove a single selected day (chip "x" in the form).
+  const removeDate = useCallback((date: string) => {
+    setForm((prev) => ({ ...prev, dates: prev.dates.filter((d) => d !== date) }));
+  }, []);
+
+  // Clear the whole selection.
+  const clearDates = useCallback(() => {
+    setForm((prev) => ({ ...prev, dates: [] }));
+  }, []);
+
   const validate = useCallback(
     (data: HolidayFormData): HolidayFormErrors => {
       const next: HolidayFormErrors = {};
-      if (!data.date) {
-        next.date = 'Indique la fecha del cierre.';
-      } else if (data.date < today) {
-        next.date = 'La fecha debe ser igual o posterior a la fecha actual.';
-      } else if (holidays.some((h) => h.date === data.date)) {
-        next.date = 'Ya existe un cierre registrado para esta fecha.';
+      if (data.dates.length === 0) {
+        next.dates = 'Seleccione al menos un día de cierre.';
+      } else if (data.dates.some((d) => d < today)) {
+        next.dates = 'Las fechas deben ser iguales o posteriores a la fecha actual.';
+      } else {
+        // Reject days already covered by another registered holiday.
+        const taken = new Set(holidays.flatMap((h) => h.dates));
+        if (data.dates.some((d) => taken.has(d))) {
+          next.dates = 'Una o más fechas ya están registradas como cierre.';
+        }
       }
       if (!data.title.trim()) {
         next.title = 'Indique el título del evento.';
@@ -88,7 +109,9 @@ export function useHolidays(onEnqueued?: () => void) {
         toast.success('Día feriado registrado y bloqueado para nuevas citas.');
       }
 
-      setForm(EMPTY_FORM);
+      // Keep the selected dates so the admin can register another nearby closure
+      // without re-picking; only clear the title and description.
+      setForm((prev) => ({ ...prev, title: '', description: '' }));
       setErrors({});
     },
     [holidays, logActivity]
@@ -105,12 +128,12 @@ export function useHolidays(onEnqueued?: () => void) {
 
     const holiday: Holiday = {
       id: makeHolidayId(),
-      date: form.date,
+      dates: [...form.dates].sort(),
       title: form.title.trim(),
       description: form.description.trim(),
     };
 
-    const impacted = getAffectedAppointments(holiday.date);
+    const impacted = getAffectedAppointments(holiday.dates);
     if (impacted.length > 0) {
       setPending({ holiday, appointments: impacted });
       return;
@@ -151,6 +174,9 @@ export function useHolidays(onEnqueued?: () => void) {
     pending,
     reschedulePrompt,
     updateField,
+    setDates,
+    removeDate,
+    clearDates,
     requestAddHoliday,
     confirmPendingHoliday,
     cancelPendingHoliday,

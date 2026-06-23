@@ -81,10 +81,12 @@ export default function InstitutionSchedulePage() {
           holidays={holidays.holidays}
           form={holidays.form}
           errors={holidays.errors}
-          today={holidays.today}
           pending={holidays.pending}
           pendingRescheduleCount={rescheduleQueue.queue.length}
           onFieldChange={holidays.updateField}
+          onChangeDates={holidays.setDates}
+          onRemoveDate={holidays.removeDate}
+          onClearDates={holidays.clearDates}
           onSubmit={holidays.requestAddHoliday}
           onConfirmPending={holidays.confirmPendingHoliday}
           onCancelPending={holidays.cancelPendingHoliday}

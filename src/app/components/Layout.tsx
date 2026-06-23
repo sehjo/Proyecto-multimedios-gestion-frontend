@@ -9,7 +9,6 @@ import {
   CalendarClock,
   CalendarX,
   Stethoscope,
-  Settings,
   LogOut,
   Menu,
   X,
@@ -17,6 +16,7 @@ import {
   BarChart3,
   ShieldCheck,
   ScrollText,
+  UserCog,
 } from 'lucide-react';
 import { useAuth } from '../modules/auth';
 
@@ -33,15 +33,15 @@ export default function Layout() {
     { name: 'Pacientes', href: '/patients', icon: UserCircle, perm: 'patients.read' },
     { name: 'Citas', href: '/appointments', icon: CalendarDays, perm: null },
     { name: 'Historial Médico', href: '/medical-history', icon: History, perm: null },
-    { name: 'Usuarios', href: '/users', icon: Users, perm: 'users.read' },
+    { name: 'Usuarios', href: '/users', icon: Users, perm: null },
     { name: 'Roles', href: '/roles', icon: ShieldCheck, perm: 'roles.read' },
+    { name: 'Doctores', href: '/doctors', icon: UserCog, perm: null },
     { name: 'Auditoría', href: '/audit', icon: ScrollText, perm: null },
     { name: 'Ocupación por Doctor', href: '/reports/doctors', icon: BarChart3, perm: null },
     { name: 'Agenda', href: '/agenda', icon: CalendarDays, perm: null },
     { name: 'Bloques Horarios', href: '/horario-config', icon: CalendarClock, perm: null },
     { name: 'Bloqueo de Agenda', href: '/bloqueo-agenda', icon: CalendarX, perm: null },
     { name: 'Resumen Diario', href: '/resumen-diario', icon: Stethoscope, perm: null },
-    { name: 'Configuración', href: '/settings', icon: Settings, perm: null },
   ].filter((item) => item.perm === null || can(item.perm));
 
   const isNavActive = (href: string) =>

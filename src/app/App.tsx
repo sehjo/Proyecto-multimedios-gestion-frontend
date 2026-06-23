@@ -3,18 +3,18 @@ import { Toaster } from 'sonner';
 import { router } from './routes';
 import { AuthProvider } from './modules/auth';
 import { ActivityProvider } from '../context/ActivityContext';
-import { SpecialtiesProvider } from '../context/SpecialtiesContext';
 import { HistoryProvider } from '../context/HistoryContext';
+import { DoctorsMockProvider } from '../context/DoctorsMockContext';
 
 export default function App() {
   return (
     <AuthProvider>
       <ActivityProvider>
         <HistoryProvider>
-          <SpecialtiesProvider>
+          <DoctorsMockProvider>
             <RouterProvider router={router} />
             <Toaster position="top-right" richColors />
-          </SpecialtiesProvider>
+          </DoctorsMockProvider>
         </HistoryProvider>
       </ActivityProvider>
     </AuthProvider>

@@ -31,10 +31,23 @@ export default function HolidayCalendar({
   onPickDate,
 }: HolidayCalendarProps) {
   const today = todayISO();
-  const [cursor, setCursor] = useState(() => {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() };
-  });
+
+  // Month shown = base month + manual navigation offset. The base month follows
+  // the date typed/picked in the form (so typing 2026-07-24 shows July 2026);
+  // with no date yet it falls back to the current month. Picking a new date
+  // resets the navigation offset by re-syncing the tracked base during render
+  // (React's "adjusting state on prop change" pattern — no effect needed).
+  const baseMonthKey = selectedDate ? selectedDate.slice(0, 7) : todayISO().slice(0, 7);
+  const [navState, setNavState] = useState({ key: baseMonthKey, offset: 0 });
+  if (navState.key !== baseMonthKey) {
+    setNavState({ key: baseMonthKey, offset: 0 });
+  }
+
+  const cursor = useMemo(() => {
+    const [by, bm] = baseMonthKey.split('-').map(Number);
+    const shifted = new Date(by, bm - 1 + navState.offset, 1);
+    return { year: shifted.getFullYear(), month: shifted.getMonth() };
+  }, [baseMonthKey, navState.offset]);
 
   const holidayByDate = useMemo(() => {
     const map = new Map<string, Holiday>();
@@ -51,10 +64,8 @@ export default function HolidayCalendar({
     return result;
   }, [cursor]);
 
-  const goPrev = () =>
-    setCursor((c) => (c.month === 0 ? { year: c.year - 1, month: 11 } : { ...c, month: c.month - 1 }));
-  const goNext = () =>
-    setCursor((c) => (c.month === 11 ? { year: c.year + 1, month: 0 } : { ...c, month: c.month + 1 }));
+  const goPrev = () => setNavState((s) => ({ ...s, offset: s.offset - 1 }));
+  const goNext = () => setNavState((s) => ({ ...s, offset: s.offset + 1 }));
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">

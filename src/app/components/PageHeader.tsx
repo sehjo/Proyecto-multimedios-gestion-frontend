@@ -6,6 +6,7 @@ interface PageHeaderProps {
   children?: ReactNode;
 }
 
+export default function PageHeader({ title, subtitle, children }: PageHeaderProps) {
   return (
     <div className="app-page-header flex items-center justify-between mb-6 gap-4">
       <div>

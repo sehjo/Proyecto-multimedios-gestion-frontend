@@ -23,7 +23,7 @@ export const router = createBrowserRouter([
           { path: 'patients', lazy: () => import('./pages/Patients').then(m => ({ Component: m.default })) },
           { path: 'appointments', lazy: () => import('./pages/Appointments').then(m => ({ Component: m.default })) },
           { path: 'users', lazy: () => import('./pages/Users').then(m => ({ Component: m.default })) },
-          { path: 'agenda', lazy: () => import('./pages/Agenda').then(m => ({ Component: m.default })) },
+          { path: 'agenda', lazy: () => import('./modules/agenda/pages/AgendaPage').then(m => ({ Component: m.default })) },
           { path: 'horario-config', lazy: () => import('./pages/HorarioConfig').then(m => ({ Component: m.default })) },
           { path: 'bloqueo-agenda', lazy: () => import('./pages/BloqueoAgenda').then(m => ({ Component: m.default })) },
           { path: 'resumen-diario', lazy: () => import('./pages/ResumenDiario').then(m => ({ Component: m.default })) },

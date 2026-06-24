@@ -98,28 +98,30 @@ export function useInstitutionSchedule() {
     []
   );
 
-  // Bulk edit: overwrite the given weekdays with the same enabled flag and the
-  // same set of intervals (each day gets its own fresh interval ids). Used to
-  // apply one configuration to several selected days at once.
-  const applyToDays = useCallback(
-    (weekdays: WeekdayKey[], enabled: boolean, intervals: { start: string; end: string }[]) => {
-      const target = new Set(weekdays);
-      setSchedule((prev) =>
-        prev.map((day) =>
-          target.has(day.weekday)
-            ? {
-                ...day,
-                enabled,
-                intervals: enabled
-                  ? intervals.map((i) => ({ id: makeIntervalId(day.weekday), start: i.start, end: i.end }))
-                  : [],
-              }
-            : day
-        )
+  // Bulk edit: copy one day's configuration (enabled flag + intervals) onto the
+  // given target weekdays. Each target gets its own fresh interval ids so they
+  // stay independent afterwards.
+  const copyDayTo = useCallback((source: WeekdayKey, targets: WeekdayKey[]) => {
+    const targetSet = new Set(targets.filter((d) => d !== source));
+    if (targetSet.size === 0) return;
+    setSchedule((prev) => {
+      const src = prev.find((d) => d.weekday === source);
+      if (!src) return prev;
+      return prev.map((day) =>
+        targetSet.has(day.weekday)
+          ? {
+              ...day,
+              enabled: src.enabled,
+              intervals: src.intervals.map((i) => ({
+                id: makeIntervalId(day.weekday),
+                start: i.start,
+                end: i.end,
+              })),
+            }
+          : day
       );
-    },
-    []
-  );
+    });
+  }, []);
 
   // Clear a stale success/info banner whenever the user edits again.
   useEffect(() => {
@@ -158,7 +160,7 @@ export function useInstitutionSchedule() {
     addInterval,
     removeInterval,
     updateInterval,
-    applyToDays,
+    copyDayTo,
     save,
   };
 }

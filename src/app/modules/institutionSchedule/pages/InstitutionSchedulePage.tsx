@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import PageContainer from '../../../components/PageContainer';
 import PageHeader from '../../../components/PageHeader';
 import { useInstitutionSchedule } from '../hooks/useInstitutionSchedule';
 import {
   WeekScheduleTable,
-  BulkEditBar,
+  BulkTargetBar,
   SchedulePersistenceNotice,
   ScheduleBannerNotice,
   ScheduleSaveBar,
@@ -23,53 +24,48 @@ export default function InstitutionSchedulePage() {
     addInterval,
     removeInterval,
     updateInterval,
-    applyToDays,
+    copyDayTo,
     save,
   } = useInstitutionSchedule();
 
-  // Weekdays checked for bulk editing (local UI state).
+  // Target weekdays for bulk edits (local UI state).
   const [selectedDays, setSelectedDays] = useState<WeekdayKey[]>([]);
 
-  const toggleSelect = (weekday: WeekdayKey) =>
+  const toggleTarget = (weekday: WeekdayKey) =>
     setSelectedDays((prev) =>
       prev.includes(weekday) ? prev.filter((d) => d !== weekday) : [...prev, weekday]
     );
 
-  const clearSelection = () => setSelectedDays([]);
-
-  const handleBulkApply = (enabled: boolean, intervals: { start: string; end: string }[]) => {
-    applyToDays(selectedDays, enabled, intervals);
-    clearSelection();
+  // Copy a day's schedule onto the selected targets, then clear the selection.
+  const applyToSelected = (source: WeekdayKey) => {
+    copyDayTo(source, selectedDays);
+    const count = selectedDays.filter((d) => d !== source).length;
+    setSelectedDays([]);
+    toast.success(`Horario aplicado a ${count} día${count !== 1 ? 's' : ''}.`);
   };
 
   return (
     <PageContainer>
       <PageHeader
         title="Horario Institucional"
-        subtitle="Configure los días habilitados y los rangos de apertura y cierre de la institución."
+        subtitle="Horario semanal recurrente: aplica a todas las semanas hasta que se modifique. Las excepciones de fechas puntuales se gestionan en Feriados."
       />
 
       <ScheduleBannerNotice banner={banner} onDismiss={dismissBanner} />
 
       <SchedulePersistenceNotice />
 
-      {selectedDays.length >= 2 && (
-        <BulkEditBar
-          selectedCount={selectedDays.length}
-          onApply={handleBulkApply}
-          onClear={clearSelection}
-        />
-      )}
+      <BulkTargetBar selectedDays={selectedDays} onToggle={toggleTarget} />
 
       <WeekScheduleTable
         schedule={schedule}
         errors={errors}
         selectedDays={selectedDays}
-        onToggleSelect={toggleSelect}
         onToggleDay={toggleDay}
         onAddInterval={addInterval}
         onRemoveInterval={removeInterval}
         onChangeInterval={updateInterval}
+        onApplyToSelected={applyToSelected}
       />
 
       <ScheduleSaveBar isValid={isValid} saving={saving} onSave={save} />

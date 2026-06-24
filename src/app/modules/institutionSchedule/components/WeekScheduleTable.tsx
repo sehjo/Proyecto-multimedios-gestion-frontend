@@ -66,7 +66,7 @@ export default function WeekScheduleTable({
                 Jornadas de atención
               </th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Acciones
+                Replicar horario
               </th>
             </tr>
           </thead>
@@ -147,13 +147,15 @@ export default function WeekScheduleTable({
                       disabled={!canApply}
                       title={
                         canApply
-                          ? `Copiar el horario de ${label} a los días seleccionados`
-                          : 'Seleccione días destino en la barra superior'
+                          ? `Copiar el horario de ${label} a los ${otherTargets.length} días marcados arriba`
+                          : 'Primero marca los días destino en la barra de arriba'
                       }
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent whitespace-nowrap"
                     >
                       <CopyCheck className="w-3.5 h-3.5" />
-                      Aplicar a {otherTargets.length || ''} sel.
+                      {canApply
+                        ? `Copiar a ${otherTargets.length} día${otherTargets.length !== 1 ? 's' : ''}`
+                        : 'Copiar a otros días'}
                     </button>
                   </td>
                 </tr>

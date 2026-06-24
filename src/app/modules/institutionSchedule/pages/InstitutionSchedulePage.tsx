@@ -41,7 +41,9 @@ export default function InstitutionSchedulePage() {
     copyDayTo(source, selectedDays);
     const count = selectedDays.filter((d) => d !== source).length;
     setSelectedDays([]);
-    toast.success(`Horario aplicado a ${count} día${count !== 1 ? 's' : ''}.`);
+    toast.success(
+      `Horario copiado a ${count} día${count !== 1 ? 's' : ''}. Recuerde guardar los cambios.`
+    );
   };
 
   return (

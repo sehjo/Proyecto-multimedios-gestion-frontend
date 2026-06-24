@@ -98,6 +98,29 @@ export function useInstitutionSchedule() {
     []
   );
 
+  // Bulk edit: overwrite the given weekdays with the same enabled flag and the
+  // same set of intervals (each day gets its own fresh interval ids). Used to
+  // apply one configuration to several selected days at once.
+  const applyToDays = useCallback(
+    (weekdays: WeekdayKey[], enabled: boolean, intervals: { start: string; end: string }[]) => {
+      const target = new Set(weekdays);
+      setSchedule((prev) =>
+        prev.map((day) =>
+          target.has(day.weekday)
+            ? {
+                ...day,
+                enabled,
+                intervals: enabled
+                  ? intervals.map((i) => ({ id: makeIntervalId(day.weekday), start: i.start, end: i.end }))
+                  : [],
+              }
+            : day
+        )
+      );
+    },
+    []
+  );
+
   // Clear a stale success/info banner whenever the user edits again.
   useEffect(() => {
     setBanner(null);
@@ -135,6 +158,7 @@ export function useInstitutionSchedule() {
     addInterval,
     removeInterval,
     updateInterval,
+    applyToDays,
     save,
   };
 }

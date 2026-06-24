@@ -150,12 +150,10 @@ export default function WeekScheduleTable({
                           ? `Copiar el horario de ${label} a los ${otherTargets.length} días marcados arriba`
                           : 'Primero marca los días destino en la barra de arriba'
                       }
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent whitespace-nowrap"
+                      className="inline-flex items-start gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent text-left max-w-[10rem]"
                     >
-                      <CopyCheck className="w-3.5 h-3.5" />
-                      {canApply
-                        ? `Copiar a ${otherTargets.length} día${otherTargets.length !== 1 ? 's' : ''}`
-                        : 'Copiar a otros días'}
+                      <CopyCheck className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      Aplicar este horario a los días seleccionados
                     </button>
                   </td>
                 </tr>

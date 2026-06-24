@@ -31,6 +31,17 @@ export default function InstitutionSchedulePage() {
   // Target weekdays for bulk edits (local UI state).
   const [selectedDays, setSelectedDays] = useState<WeekdayKey[]>([]);
 
+  // Save lives at the bottom while the result banner shows at the top; on a
+  // successful save scroll up so the user actually sees the confirmation instead
+  // of clicking repeatedly. On a validation error the message shows in the save
+  // bar (already in view), so we stay put.
+  const handleSave = () => {
+    save();
+    if (isValid) {
+      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const toggleTarget = (weekday: WeekdayKey) =>
     setSelectedDays((prev) =>
       prev.includes(weekday) ? prev.filter((d) => d !== weekday) : [...prev, weekday]
@@ -70,7 +81,7 @@ export default function InstitutionSchedulePage() {
         onApplyToSelected={applyToSelected}
       />
 
-      <ScheduleSaveBar isValid={isValid} saving={saving} onSave={save} />
+      <ScheduleSaveBar isValid={isValid} saving={saving} onSave={handleSave} />
     </PageContainer>
   );
 }
